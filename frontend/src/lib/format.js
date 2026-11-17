@@ -46,3 +46,9 @@ export function libelleVersion(v, detaille = false) {
   const base = detaille ? `Version ${v.version} · Lot ${v.lot}${commit ? " · " + commit : ""}` : `Version ${v.version}`;
   return `${base} · déployée le ${v.deploye_le}`;
 }
+
+/** Montant en FCFA avec séparateur de milliers : 12345 → « 12 345 FCFA ». */
+export function fcfa(v) {
+  if (v === null || v === undefined || v === "") return "";
+  return Math.round(Number(v)).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ") + " FCFA";
+}

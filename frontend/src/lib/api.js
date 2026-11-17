@@ -32,3 +32,11 @@ export async function api(chemin, { methode = "GET", corps, avecJeton = true } =
   if (donnees === null) throw new Error("Réponse inattendue du serveur");
   return donnees;
 }
+
+/** Récupère un PDF protégé (jeton exigé) sous forme d'adresse « blob: » affichable dans le lecteur interne. */
+export async function chargerPdf(chemin) {
+  let r;
+  try { r = await fetch(BASE + chemin, { headers: { Authorization: "Bearer " + jeton.lire() } }); } catch { throw new Error("Serveur injoignable : vérifiez la connexion Internet"); }
+  if (!r.ok) throw new Error("Document indisponible (erreur " + r.status + ")");
+  return URL.createObjectURL(await r.blob());
+}

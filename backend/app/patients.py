@@ -32,7 +32,7 @@ CRENEAUX = ["matin", "midi", "soir"]
 # Champs visibles du seul personnel médical et de l'administration.
 CHAMPS_MEDICAUX = {"groupe_sanguin", "cause_irc", "date_debut_dialyse", "serologies", "allergies", "antecedents", "poids_sec",
                    "prescription", "acces_vasculaires"}
-CHAMPS_IDENTITE = {"nom", "prenom", "sexe", "date_naissance", "telephone", "adresse", "personne_a_prevenir", "prise_en_charge", "numero_assurance"}
+CHAMPS_IDENTITE = {"nom", "prenom", "sexe", "date_naissance", "telephone", "adresse", "personne_a_prevenir", "prise_en_charge", "numero_assurance", "organisme_id", "taux_prise_en_charge"}
 
 
 def masquer(doc: dict, role: str) -> dict:
@@ -70,6 +70,13 @@ def _identite(corps: dict, creation: bool) -> dict:
     if "prise_en_charge" in corps:
         v = validation.texte(corps, "prise_en_charge", "Prise en charge", False, 80)
         d["prise_en_charge"] = v                       # liste déroulante + « Autre… » : une valeur libre reste admise (règle 10)
+    if "organisme_id" in corps:
+        oid = str(corps.get("organisme_id") or "")
+        if oid and not db.base().organismes.find_one({"id": oid}):
+            validation.erreur("Organisme payeur inconnu")
+        d["organisme_id"] = oid
+    if "taux_prise_en_charge" in corps:
+        d["taux_prise_en_charge"] = validation.nombre(corps, "taux_prise_en_charge", "Taux de prise en charge (%)", 0, 100)
     if "personne_a_prevenir" in corps:
         p = corps.get("personne_a_prevenir") or {}
         d["personne_a_prevenir"] = {"nom": validation.texte(p, "nom", "Personne à prévenir", False, 80),

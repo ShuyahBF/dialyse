@@ -47,6 +47,8 @@ LECTURE_JOURNAL = ADMINISTRATION
 # Consommables et stocks : lecture par les équipes de soins et la technique ; écriture (entrées, sorties, ajustements) par les infirmiers, la technique et l'administration.
 LECTURE_STOCK = {MEDECIN, INFIRMIER, TECHNICIEN, ADMIN, SUPER_ADMIN}
 ECRITURE_STOCK = {INFIRMIER, TECHNICIEN, ADMIN, SUPER_ADMIN}
+# Facturation : caisse et secrétariat ; paramétrage (tarifs, organismes, annulation) : administration. Aucune donnée médicale n'y figure.
+FACTURATION = {SECRETARIAT, ADMIN, SUPER_ADMIN}
 # Suppression d'un patient (sans séance) : administration seulement.
 SUPPRESSION = ADMINISTRATION
 

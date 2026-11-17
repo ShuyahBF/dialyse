@@ -5,6 +5,7 @@ import Toasts from "./composants/Toasts.jsx";
 import { useApp } from "./lib/contexte.jsx";
 import Compte from "./pages/Compte.jsx";
 import Connexion from "./pages/Connexion.jsx";
+import Facturation from "./pages/Facturation.jsx";
 import Journal from "./pages/Journal.jsx";
 import Patients from "./pages/Patients.jsx";
 import Planning from "./pages/Planning.jsx";
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="planning" element={<Planning />} />
             <Route path="patients" element={<Patients />} />
             <Route path="postes" element={<Postes />} />
+            <Route path="facturation" element={<Facturation />} />
             <Route path="stock" element={<Stock />} />
             <Route path="utilisateurs" element={<Utilisateurs />} />
             <Route path="journal" element={<Journal />} />
