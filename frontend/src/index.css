@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- Tableaux (règles 3 et 19) ----------
+   Survol : fond bleu clair transparent. Sélection : fond orange clair, police bleu nuit (contraste 7,7:1).
+   Une ligne est sélectionnée si elle porte la classe « ligne-selectionnee » ou aria-selected="true". */
+table.tableau { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table.tableau th { text-align: left; font-weight: 600; padding: 0.6rem 0.75rem; background: #e0f2fe; color: #0A1E3D; white-space: nowrap; }
+table.tableau td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #e2e8f0; }
+table.tableau tbody tr:hover { background: rgba(56, 189, 248, 0.16); }
+table.tableau tbody tr.ligne-selectionnee, table.tableau tbody tr[aria-selected="true"] { background: #f6a35b; color: #0A1E3D; }
+/* Nombres toujours à droite, en-tête compris. */
+table.tableau .num { text-align: right; font-variant-numeric: tabular-nums; }
+/* En-tête de colonne triée : orange. */
+table.tableau th.trie { background: #fed7aa; }
+
+/* ---------- Protection de l'écran (données de santé) ---------- */
+.ecran-flou { filter: blur(14px); pointer-events: none; user-select: none; }
+@media print { body * { display: none !important; } body::before { content: "Impression interdite"; display: block; } }
+
+/* Jauge circulaire d'attente (règle « Attentes et chargements »). */
+@keyframes tourne { to { transform: rotate(360deg); } }
+.jauge { width: 1.25rem; height: 1.25rem; border-radius: 9999px; border: 3px solid rgba(14, 116, 144, 0.25); border-top-color: #0e7490; animation: tourne 0.8s linear infinite; }
