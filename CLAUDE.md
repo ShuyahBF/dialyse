@@ -37,7 +37,7 @@ Rappel des principales :
   taux du patient > taux de l'organisme > 0 % ; paiements partiels du patient ou de l'organisme, jamais au-delà du reste dû ; une facture ne se supprime pas : elle s'ANNULE (administration, motif, aucun paiement) ;
   PDF `reportlab` servi en `inline` et affiché dans le lecteur interne (`PdfInterne`, seules actions « Imprimer » et « Fermer », aucun téléchargement) ; aucune donnée médicale sur une facture ;
   tarifs, organismes et en-tête : administration ; caisse : secrétariat et administration (le médecin n'y a pas accès).
-- Prochains lots :  et prise en charge, rapports, sauvegardes chiffrées, biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
+- Prochains lots : rapports (jour, semaine, mois, période, genre, tranches d'âge), sauvegardes chiffrées, biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
 
 ## Tests avant toute livraison
 - `cd backend && python -m pytest tests -q` (base en mémoire `mongomock`).
