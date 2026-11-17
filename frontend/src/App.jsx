@@ -10,6 +10,7 @@ import Journal from "./pages/Journal.jsx";
 import Patients from "./pages/Patients.jsx";
 import Planning from "./pages/Planning.jsx";
 import Postes from "./pages/Postes.jsx";
+import Reinitialiser from "./pages/Reinitialiser.jsx";
 import Rapports from "./pages/Rapports.jsx";
 import Sauvegardes from "./pages/Sauvegardes.jsx";
 import Stock from "./pages/Stock.jsx";
@@ -23,7 +24,9 @@ export default function App() {
   const accueil = ["secretariat"].includes(role) ? "/planning" : role === "technicien" ? "/postes" : "/";
   return (
     <>
-      {!utilisateur ? <Connexion /> : (
+      {!utilisateur ? (
+        <Routes><Route path="reinitialiser" element={<Reinitialiser />} /><Route path="*" element={<Connexion />} /></Routes>
+      ) : (
         <Routes>
           <Route element={<MiseEnPage />}>
             <Route index element={role === "secretariat" || role === "technicien" ? <Navigate to={accueil} replace /> : <Tableau />} />

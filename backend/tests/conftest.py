@@ -9,6 +9,8 @@ from fastapi.testclient import TestClient
 os.environ["JWT_SECRET"] = "secret-de-test-assez-long-123456"
 os.environ["PRESENCE_SAWALI"] = "0"
 os.environ["TACHES_DE_FOND"] = "0"
+os.environ["WHATSAPP_SYNC"] = "1"
+os.environ["FRONTEND_ORIGIN"] = "https://dialyse.test"
 os.environ["SAUVEGARDE_CLE"] = "cle-de-test-pour-les-sauvegardes-123"
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 

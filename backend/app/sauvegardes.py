@@ -32,7 +32,7 @@ routeur = APIRouter()
 
 # Données de travail sauvegardées (les sauvegardes elles-mêmes sont exclues).
 COLLECTIONS = ["utilisateurs", "parametres", "patients", "postes", "seances", "bilans", "articles", "lots", "mouvements",
-               "tarifs", "organismes", "factures", "historique", "journal"]
+               "tarifs", "organismes", "factures", "historique", "passkeys", "biometries", "journal"]
 NON_RESTAUREES = {"journal"}                  # le journal d'audit actuel est conservé
 MORCEAU = 4 * 1024 * 1024                     # morceaux de 4 Mo (limite de 16 Mo par document MongoDB)
 CONSERVER = {"auto": 14, "manuelle": 10, "avant_restauration": 3, "importee": 5}
@@ -115,7 +115,7 @@ def verifier(ident: str) -> dict:
         db.base().sauvegardes.update_one({"id": ident}, {"$set": {"verifiee": False, "erreur": "empreinte du fichier différente"}})
         raise HTTPException(409, "Sauvegarde corrompue : l'empreinte du fichier ne correspond plus")
     contenu = dechiffrer(donnees)
-    lus = {c: len(contenu.get("collections", {}).get(c, [])) for c in COLLECTIONS}
+    lus = {c: len(contenu.get("collections", {}).get(c, [])) for c in f["compteurs"]}       # seulement les collections présentes à la création (anciennes sauvegardes)
     if lus != f["compteurs"]:
         db.base().sauvegardes.update_one({"id": ident}, {"$set": {"verifiee": False, "erreur": "nombre de documents différent"}})
         raise HTTPException(409, "Sauvegarde incohérente : le nombre de documents relu ne correspond pas")
@@ -153,7 +153,9 @@ def _appliquer(contenu: dict) -> None:
     for c in COLLECTIONS:
         if c in NON_RESTAUREES:
             continue
-        docs = contenu.get("collections", {}).get(c, [])
+        if c not in contenu.get("collections", {}):          # collection absente d'une ancienne sauvegarde : on ne la vide pas
+            continue
+        docs = contenu["collections"][c]
         db.base()[c].delete_many({})
         if docs:
             db.base()[c].insert_many([dict(d) for d in docs])
@@ -219,7 +221,7 @@ def apercu(ident: str, u: dict = Depends(exiger_roles(roles.SUPER_ADMIN))):
     contenu = dechiffrer(_lire_octets(ident))
     actuel = compteurs_base()
     compte_ok = any(x.get("login") == u["login"] and x.get("role") == roles.SUPER_ADMIN for x in contenu["collections"].get("utilisateurs", []))
-    lignes = [{"collection": c, "actuel": actuel[c], "sauvegarde": f["compteurs"][c], "ecart": f["compteurs"][c] - actuel[c], "conservee": c in NON_RESTAUREES} for c in COLLECTIONS]
+    lignes = [{"collection": c, "actuel": actuel[c], "sauvegarde": f["compteurs"][c], "ecart": f["compteurs"][c] - actuel[c], "conservee": c in NON_RESTAUREES} for c in COLLECTIONS if c in f["compteurs"]]
     return {"sauvegarde": _public(f), "lignes": lignes, "compte_present": compte_ok, "cle_actuelle": f.get("cle") == empreinte_cle(), "confirmation": CONFIRMATION}
 
 

@@ -43,7 +43,12 @@ Rappel des principales :
   restauration = aperçu, confirmation « RESTAURER », copie de sécurité vérifiée AVANT, contrôle des compteurs APRÈS, retour arrière automatique au moindre écart ; le journal d'audit n'est jamais remplacé ;
   restauration refusée si le compte du super administrateur n'est pas dans la sauvegarde ; restaurer, télécharger, importer, supprimer : super administrateur seul ; sauvegarde quotidienne dès 02 h UTC (14 gardées).
   Leçon d'une perte de données réelle sur une autre plateforme : ne JAMAIS restaurer sans copie de sécurité ni contrôle après coup.
-- Prochains lots : biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
+- **Accès biométrique et WhatsApp (lot 7)** : clés d'accès WebAuthn (`passkeys.py`, vérification de l'utilisateur EXIGÉE, défi à usage unique de 5 min, compteur anti-clonage, lien au domaine `WEBAUTHN_RP_ID` / `FRONTEND_ORIGIN`) ;
+  empreinte d'appareil Android (secret par appareil, `/compte/biometrie/*`, `/auth/biometrie`) ; code WhatsApp = connexion, second facteur facultatif, vérification du numéro et lien « mot de passe oublié » (`acces.py`).
+  Sécurité : réponses identiques que le compte existe ou non, codes hachés (HMAC), 5 essais par code, 5 demandes par heure et par compte (compteur à part : `envois_acces`), blocage du compte comme pour le mot de passe,
+  clés d'accès et empreintes ANNULÉES après une réinitialisation du mot de passe ; clé d'accès ou empreinte = authentification forte (pas de second code) ; messages WhatsApp en fil séparé (jamais dans la requête), sans aucune donnée de patient.
+  Variables Render : `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_OTP_TEMPLATE`, `WHATSAPP_RESET_TEMPLATE`, `FRONTEND_ORIGIN`. Sans elles, les boutons WhatsApp sont masqués.
+- Prochains lots : application Android (DG et médecins, dossiers anonymisés).
 
 ## Tests avant toute livraison
 - `cd backend && python -m pytest tests -q` (base en mémoire `mongomock`).

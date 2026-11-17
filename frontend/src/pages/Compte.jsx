@@ -1,16 +1,18 @@
 // Mon compte : changement de mot de passe (œil) et double authentification (activer / désactiver, avec code QR).
-import { KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
+import { Fingerprint, KeyRound, MessageCircle, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
 import QRCode from "qrcode";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton from "../composants/Bouton.jsx";
 import ChampMotDePasse from "../composants/ChampMotDePasse.jsx";
 import { Champ, Texte } from "../composants/Champs.jsx";
 import { api } from "../lib/api.js";
 import { useApp } from "../lib/contexte.jsx";
+import { dateHeureFr } from "../lib/format.js";
+import { clesAccesDisponibles, creerCleAcces, messageCleAcces } from "../lib/passkeys.js";
 
 export default function Compte() {
-  const { utilisateur, setUtilisateur, avecToast } = useApp();
+  const { utilisateur, setUtilisateur, avecToast, toast } = useApp();
   const [ancien, setAncien] = useState("");
   const [nouveau, setNouveau] = useState("");
   const [prep, setPrep] = useState(null);           // { secret, uri, qr }
@@ -33,6 +35,32 @@ export default function Compte() {
     await avecToast("Désactivation", () => api("/auth/2fa/desactiver", { methode: "POST", corps: { mot_de_passe: mdp2fa, code } }), () => "Double authentification désactivée");
     setMdp2fa(""); setCode(""); setUtilisateur({ ...utilisateur, totp_actif: false });
   }
+  // ---- WhatsApp et clés d'accès ----
+  const [acces, setAcces] = useState(null);
+  const [cles, setCles] = useState([]);
+  const [tel, setTel] = useState("");
+  const [codeTel, setCodeTel] = useState("");
+  const [envoye, setEnvoye] = useState(false);
+  const [mdpAcces, setMdpAcces] = useState("");
+  const [nomCle, setNomCle] = useState("");
+  const chargerAcces = useCallback(async () => { setAcces(await api("/compte/acces")); setCles((await api("/auth/passkey")).cles); }, []);
+  useEffect(() => { chargerAcces().catch(() => {}); }, [chargerAcces]);
+  async function envoyerCodeTel() { await avecToast("Envoi du code WhatsApp", () => api("/compte/telephone/demande", { methode: "POST", corps: { telephone: tel } }), () => "Code envoyé par WhatsApp"); setEnvoye(true); }
+  async function verifierTel() { await avecToast("Vérification du numéro", () => api("/compte/telephone/verifier", { methode: "POST", corps: { code: codeTel } }), (r) => `Numéro ${r.telephone} vérifié`); setEnvoye(false); setTel(""); setCodeTel(""); await chargerAcces(); }
+  async function retirerTel() { await avecToast("Retrait du numéro", () => api("/compte/telephone", { methode: "DELETE" }), () => "Numéro retiré"); await chargerAcces(); }
+  async function basculerOtpWa() {
+    await avecToast("Enregistrement", () => api("/compte/otp-wa", { methode: "PUT", corps: { actif: !acces.otp_wa_actif, mot_de_passe: mdpAcces } }), (r) => (r.otp_wa_actif ? "Code WhatsApp exigé à chaque connexion" : "Code WhatsApp non exigé"));
+    setMdpAcces(""); await chargerAcces();
+  }
+  async function ajouterCle() {
+    try {
+      const o = await avecToast("Préparation de la clé d'accès", () => api("/auth/passkey/options-enregistrement", { methode: "POST", corps: { mot_de_passe: mdpAcces } }), () => "Validez avec votre empreinte, votre visage ou le code de l'appareil");
+      const credential = await creerCleAcces(o.options);
+      await avecToast("Enregistrement de la clé", () => api("/auth/passkey/enregistrer", { methode: "POST", corps: { defi_id: o.defi_id, credential, nom: nomCle } }), (r) => `Clé « ${r.nom} » ajoutée`);
+      setMdpAcces(""); setNomCle(""); await chargerAcces();
+    } catch (e) { const m = messageCleAcces(e); if (m) toast(m, "erreur"); }
+  }
+  async function supprimerCle(c) { await avecToast("Suppression de la clé", () => api(`/auth/passkey/${c.credential_id}/supprimer`, { methode: "POST", corps: { mot_de_passe: mdpAcces } }), () => "Clé supprimée"); setMdpAcces(""); await chargerAcces(); }
   const faible = nouveau.length < 8 || !/[a-zA-Z]/.test(nouveau) || !/\d/.test(nouveau);
 
   return (
@@ -68,6 +96,50 @@ export default function Compte() {
           </div>
         )}
       </section>
+      {acces && (
+        <section className="rounded-2xl bg-white p-4 border border-slate-200 mb-4">
+          <h2 className="font-semibold mb-2 flex items-center gap-2"><MessageCircle size={18} className="text-emerald-600" /> Numéro WhatsApp</h2>
+          {!acces.whatsapp_disponible && <p className="text-sm text-slate-500">WhatsApp n'est pas encore activé sur le serveur (variables WHATSAPP_… à saisir dans Render).</p>}
+          {acces.whatsapp_disponible && (acces.telephone_verifie ? (
+            <div>
+              <p className="text-sm mb-2">Numéro vérifié : <b>{acces.telephone}</b>. Il permet la connexion par code WhatsApp et le lien « mot de passe oublié ».</p>
+              <Champ libelle="Mot de passe (pour modifier le second facteur)"><ChampMotDePasse valeur={mdpAcces} onChange={setMdpAcces} /></Champ>
+              <div className="flex flex-wrap gap-2">
+                <Bouton icone={acces.otp_wa_actif ? ShieldOff : ShieldCheck} variante={acces.otp_wa_actif ? "rouge" : "vert"} disabled={!mdpAcces} onClick={basculerOtpWa}>
+                  {acces.otp_wa_actif ? "Ne plus exiger le code WhatsApp à la connexion" : "Exiger un code WhatsApp à chaque connexion"}</Bouton>
+                <Bouton icone={Trash2} onClick={retirerTel}>Retirer ce numéro</Bouton>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <Texte libelle="Votre numéro WhatsApp" valeur={tel} onChange={setTel} inputMode="tel" placeholder="+226 70 12 34 56" aide="Un code de vérification vous est envoyé sur ce numéro." />
+              {envoye && <Texte libelle="Code reçu par WhatsApp (6 chiffres)" valeur={codeTel} onChange={setCodeTel} inputMode="numeric" placeholder="123456" />}
+              <div className="flex gap-2">
+                <Bouton icone={MessageCircle} variante="vert" disabled={!tel} onClick={envoyerCodeTel}>{envoye ? "Renvoyer le code" : "Recevoir un code"}</Bouton>
+                {envoye && <Bouton icone={ShieldCheck} variante="principal" disabled={codeTel.length < 6} onClick={verifierTel}>Vérifier le numéro</Bouton>}
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+      {acces && clesAccesDisponibles() && (
+        <section className="rounded-2xl bg-white p-4 border border-slate-200 mb-4">
+          <h2 className="font-semibold mb-2 flex items-center gap-2"><Fingerprint size={18} className="text-violet-600" /> Empreinte, visage ou code de l'appareil</h2>
+          <p className="text-sm text-slate-600 mb-3">Connexion sans mot de passe avec une clé d'accès enregistrée sur cet appareil (rien de secret ne quitte l'appareil).</p>
+          <ul className="space-y-1.5 mb-3">
+            {cles.map((c) => (
+              <li key={c.credential_id} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm">
+                <Fingerprint size={16} className="text-violet-600" /><span className="flex-1">{c.nom}<span className="block text-xs text-slate-500">{c.dernier_usage ? "utilisée le " + dateHeureFr(c.dernier_usage) : "jamais utilisée"}</span></span>
+                <Bouton petit variante="neutre" icone={Trash2} disabled={!mdpAcces} onClick={() => supprimerCle(c)}>Supprimer</Bouton>
+              </li>
+            ))}
+            {!cles.length && <li className="text-sm text-slate-500">Aucune clé d'accès enregistrée.</li>}
+          </ul>
+          <Champ libelle="Mot de passe (demandé pour ajouter ou supprimer une clé)"><ChampMotDePasse valeur={mdpAcces} onChange={setMdpAcces} /></Champ>
+          <Texte libelle="Nom de cet appareil" valeur={nomCle} onChange={setNomCle} placeholder="Téléphone de BADINI Awa" />
+          <Bouton icone={Fingerprint} variante="principal" disabled={!mdpAcces} onClick={ajouterCle}>Ajouter cet appareil</Bouton>
+        </section>
+      )}
       <BandeauVersion />
     </div>
   );
