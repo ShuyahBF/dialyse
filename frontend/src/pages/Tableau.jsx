@@ -21,12 +21,15 @@ function Carte({ icone: Icone, titre, valeur, sous, couleur }) {
 }
 
 export default function Tableau() {
-  const { avecToast, toast } = useApp();
+  const { utilisateur, avecToast, toast } = useApp();
+  // Le directeur général ne voit que des chiffres agrégés : suivi nominatif des bilans et stocks réservés à qui y a droit (le serveur refuserait).
+  const soignant = ["medecin", "infirmier", "admin", "super_admin"].includes(utilisateur.role);
+  const stockOk = soignant;
   const [t, setT] = useState(null);
   const [suivi, setSuivi] = useState(null);
   const [stock, setStock] = useState(null);
   // Deux lectures indépendantes lancées en parallèle (règle 7) : indicateurs et suivi des bilans.
-  const charger = useCallback(async () => { const [x, s, st] = await Promise.all([api("/tableau"), api("/bilans/suivi"), api("/stock/alertes").catch(() => null)]); setT(x); setSuivi(s); setStock(st); }, []);
+  const charger = useCallback(async () => { const [x, s, st] = await Promise.all([api("/tableau"), soignant ? api("/bilans/suivi") : null, stockOk ? api("/stock/alertes") : null]); setT(x); setSuivi(s); setStock(st); }, [soignant, stockOk]);
   useEffect(() => { charger().catch((e) => toast(e.message, "erreur")); }, [charger, toast]);
   const actualiser = () => avecToast("Actualisation du tableau de bord", charger, () => "Tableau de bord actualisé");
   if (!t) return <div className="p-8 flex justify-center"><span className="jauge" /></div>;
