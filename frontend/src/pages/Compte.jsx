@@ -5,10 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton from "../composants/Bouton.jsx";
 import ChampMotDePasse from "../composants/ChampMotDePasse.jsx";
+import ForceMotDePasse from "../composants/ForceMotDePasse.jsx";
 import { Champ, Texte } from "../composants/Champs.jsx";
 import { api } from "../lib/api.js";
 import { useApp } from "../lib/contexte.jsx";
 import { dateHeureFr } from "../lib/format.js";
+import { motDePasseAssezFort } from "../lib/motdepasse.js";
 import { clesAccesDisponibles, creerCleAcces, messageCleAcces } from "../lib/passkeys.js";
 
 export default function Compte() {
@@ -61,7 +63,7 @@ export default function Compte() {
     } catch (e) { const m = messageCleAcces(e); if (m) toast(m, "erreur"); }
   }
   async function supprimerCle(c) { await avecToast("Suppression de la clé", () => api(`/auth/passkey/${c.credential_id}/supprimer`, { methode: "POST", corps: { mot_de_passe: mdpAcces } }), () => "Clé supprimée"); setMdpAcces(""); await chargerAcces(); }
-  const faible = nouveau.length < 8 || !/[a-zA-Z]/.test(nouveau) || !/\d/.test(nouveau);
+  const faible = !motDePasseAssezFort(nouveau);
 
   return (
     <div className="max-w-xl">
@@ -72,6 +74,7 @@ export default function Compte() {
         <h2 className="font-semibold mb-3 flex items-center gap-2"><KeyRound size={18} className="text-turquoise-600" /> Changer Mon Mot De Passe</h2>
         <Champ libelle="Mot de passe actuel"><ChampMotDePasse valeur={ancien} onChange={setAncien} /></Champ>
         <Champ libelle="Nouveau mot de passe" aide="8 caractères au moins, avec une lettre et un chiffre"><ChampMotDePasse valeur={nouveau} onChange={setNouveau} autoComplete="new-password" /></Champ>
+        <ForceMotDePasse valeur={nouveau} />
         <Bouton icone={KeyRound} variante="principal" disabled={!ancien || faible} onClick={changerMdp}>Changer le mot de passe</Bouton>
       </section>
       <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10 mb-4">
