@@ -31,7 +31,9 @@ Rappel des principales :
 - **Alertes cliniques** (`backend/app/alertes.py`) : fonctions pures, seuils usuels regroupés au même endroit, **à valider par le médecin responsable** ; elles alertent, elles n'interdisent rien.
 - **Bilans biologiques (lot 2)** : catalogue, cibles et seuils critiques dans `backend/app/bilans_ref.py` (fonctions pures, **à valider par le médecin responsable**) ; l'interprétation (statuts, URR, alertes) est calculée à la lecture, jamais stockée ;
   données médicales : jamais le secrétariat ni le technicien ; correction réservée au médecin, suppression à l'administration ; bilan « en retard » = dernier bilan de plus de 35 jours.
-- Prochains lots : consommables et stocks, facturation et prise en charge, rapports, sauvegardes chiffrées, biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
+- **Consommables et stocks (lot 3)** : stock = somme des LOTS (numéro obligatoire à l'entrée : traçabilité) ; sorties en FEFO hors lots périmés ; le démarrage d'une séance décompte les articles « par séance » et note les lots
+  utilisés ; un stock insuffisant ne bloque JAMAIS un soin (le manque est noté sur la séance et dans les alertes) ; rappel de lot : `GET /stock/tracabilite` (soignants et administration, consultation journalisée).
+- Prochains lots : facturation et prise en charge, rapports, sauvegardes chiffrées, biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
 
 ## Tests avant toute livraison
 - `cd backend && python -m pytest tests -q` (base en mémoire `mongomock`).

@@ -12,7 +12,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from . import alertes as al, db, historique, patients as pat, roles, validation
+from . import alertes as al, db, historique, patients as pat, roles, stock, validation
 from .auth import exiger_roles, journaliser
 
 routeur = APIRouter()
@@ -37,7 +37,7 @@ def _public(s: dict, patient: dict | None, poste: dict | None, role: str) -> dic
         d["poids_sec"] = (patient or {}).get("poids_sec")
         d["serologie_positive"] = any(v == "positif" for v in ((patient or {}).get("serologies") or {}).values())
     else:
-        for k in ("pre", "post", "parametres", "surveillance", "incidents", "observations", "acces_id"):
+        for k in ("pre", "post", "parametres", "surveillance", "incidents", "observations", "acces_id", "consommables", "manques"):
             d.pop(k, None)
     return d
 
@@ -281,6 +281,8 @@ def demarrer(id_: str, corps: dict, u: dict = Depends(exiger_roles(roles.DEROULE
              "uf_prevue_l": validation.nombre(entree, "uf_prevue_l", "Ultrafiltration prévue (l)", 0, 10), "acces_id": acces_id}
     maj = {"statut": "en_cours", "pre": pre, "parametres": param, "debut_a": db.maintenant(), "infirmier": u["login"],
            "surveillance": [], "incidents": [], "updated_at": db.maintenant(), "maj_par": u["login"]}
+    # Consommation automatique des articles « par séance » (traçabilité des lots) : un manque de stock ne bloque jamais le soin.
+    maj["consommables"], maj["manques"] = stock.consommer_seance(id_, s["patient_id"], u)
     db.base().seances.update_one({"id": id_}, {"$set": maj})
     historique.noter("seances", id_, u, ["statut"])
     journaliser("seance_demarree", u, id_)
