@@ -26,7 +26,7 @@ export function Liste({ libelle, valeur, onChange, options, vide = "— Choisir 
   return (
     <Champ libelle={libelle} aide={aide}>
       <select value={valeur ?? ""} onChange={(e) => onChange(e.target.value)} className={classeChamp}>
-        <option value="">{vide}</option>
+        {vide !== null && <option value="">{vide}</option>}
         {inconnue && <option value={valeur}>{valeur}</option>}
         {opts.map((o) => <option key={o.valeur} value={o.valeur}>{o.libelle}</option>)}
       </select>

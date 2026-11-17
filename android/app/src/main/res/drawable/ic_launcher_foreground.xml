@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Goutte orange avec un tracé de pouls blanc (logo Dialyse), dans la zone sûre de 66 dp au centre -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FF7A0A" android:pathData="M54,30C54,30 38,50 38,63a16,16 0 0 0 32,0C70,50 54,30 54,30z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M43,64h6l3,-7l5,13l3,-6h6" />
+</vector>
