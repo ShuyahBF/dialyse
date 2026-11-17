@@ -7,7 +7,7 @@ from . import db, roles
 from .auth import exiger_roles, journaliser
 
 routeur = APIRouter()
-COLLECTIONS = ("patients", "postes", "seances")
+COLLECTIONS = ("patients", "postes", "seances", "bilans")
 TECHNIQUES = {"updated_at", "maj_par", "id", "created_at", "cree_par", "nom_norm", "prenom_norm", "code"}
 
 
