@@ -7,6 +7,8 @@ Sur Render : onglet « Environment » du service.
   JWT_SECRET               longue phrase secrète aléatoire (secret)
   SUPERADMIN_LOGIN         identifiant du premier super administrateur (créé au 1er démarrage)
   SUPERADMIN_MOT_DE_PASSE  son mot de passe initial (secret ; à changer à la 1re connexion)
+  SAUVEGARDE_CLE           clé de chiffrement des sauvegardes (16 caractères minimum, secret saisi par le propriétaire ; à garder en lieu sûr)
+  TACHES_DE_FOND           « 0 » pour désactiver les tâches planifiées (tests)
   FRONTEND_ORIGIN          adresse du site web (pour CORS), ex. https://dialyse.onrender.com
   PRESENCE_SAWALI          « 0 » pour désactiver le signal de présence (tests)
 """

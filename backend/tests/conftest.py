@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 
 os.environ["JWT_SECRET"] = "secret-de-test-assez-long-123456"
 os.environ["PRESENCE_SAWALI"] = "0"
+os.environ["TACHES_DE_FOND"] = "0"
+os.environ["SAUVEGARDE_CLE"] = "cle-de-test-pour-les-sauvegardes-123"
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app import db, securite  # noqa: E402

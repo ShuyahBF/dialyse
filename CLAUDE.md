@@ -39,7 +39,11 @@ Rappel des principales :
   tarifs, organismes et en-tête : administration ; caisse : secrétariat et administration (le médecin n'y a pas accès).
 - **Rapports (lot 5)** : AGRÉGÉS, jamais de nom ni de code patient (test `test_droits_direction_anonymat_et_journal`) ; calculs purs dans `backend/app/rapports.py` ; âge calculé à la date de chaque séance ; période libre de 366 jours au plus ;
   consultation journalisée ; PDF `inline` dans le lecteur interne. Rôle **Directeur général** (`direction`) : rapports et tableau de bord agrégés seulement (le serveur lui refuse patients, séances, bilans, stock, factures, comptes, journal).
-- Prochains lots : sauvegardes chiffrées, biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
+- **Sauvegardes (lot 6)** : gzip + Fernet, clé `SAUVEGARDE_CLE` (Render, 16 caractères minimum, jamais dans le dépôt) ; une sauvegarde n'est comptée que si elle a été RELUE (« intacte » : empreinte + déchiffrement + compteurs) ;
+  restauration = aperçu, confirmation « RESTAURER », copie de sécurité vérifiée AVANT, contrôle des compteurs APRÈS, retour arrière automatique au moindre écart ; le journal d'audit n'est jamais remplacé ;
+  restauration refusée si le compte du super administrateur n'est pas dans la sauvegarde ; restaurer, télécharger, importer, supprimer : super administrateur seul ; sauvegarde quotidienne dès 02 h UTC (14 gardées).
+  Leçon d'une perte de données réelle sur une autre plateforme : ne JAMAIS restaurer sans copie de sécurité ni contrôle après coup.
+- Prochains lots : biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
 
 ## Tests avant toute livraison
 - `cd backend && python -m pytest tests -q` (base en mémoire `mongomock`).

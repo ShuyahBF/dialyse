@@ -1,6 +1,6 @@
 """
 Accès à MongoDB. La base est ouverte à la première utilisation (Atlas) ou injectée par les tests (base en mémoire).
-Collections : utilisateurs, parametres, journal, patients, postes, seances, bilans, articles, lots, mouvements, tarifs, organismes, factures, historique.
+Collections : utilisateurs, parametres, journal, patients, postes, seances, bilans, articles, lots, mouvements, tarifs, organismes, factures, sauvegardes (+ morceaux), historique.
 """
 from __future__ import annotations
 
@@ -44,6 +44,9 @@ def creer_index(b) -> None:
     b.patients.create_index("code", unique=True)
     b.patients.create_index([("nom_norm", 1), ("prenom_norm", 1)])
     b.patients.create_index("statut")
+    b.sauvegardes.create_index("id", unique=True)
+    b.sauvegardes.create_index([("origine", 1), ("cree_le", -1)])
+    b.sauvegardes_morceaux.create_index([("sauvegarde_id", 1), ("n", 1)])
     b.articles.create_index("id", unique=True)
     b.articles.create_index("nom", unique=True)
     b.lots.create_index([("article_id", 1), ("numero", 1)])

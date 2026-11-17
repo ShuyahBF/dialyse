@@ -1,5 +1,5 @@
 // Mise en page du portail : barre latérale (menus selon le rôle, majuscule à chaque mot : règle 18), en-tête, version affichée.
-import { Activity, BarChart3, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Monitor, Package, Receipt, ShieldCheck, UserCog, Users } from "lucide-react";
+import { Activity, BarChart3, CalendarDays, ClipboardList, DatabaseBackup, LayoutDashboard, LogOut, Monitor, Package, Receipt, ShieldCheck, UserCog, Users } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useApp } from "../lib/contexte.jsx";
 import { titreMenu } from "../lib/format.js";
@@ -17,6 +17,7 @@ const MENU = [
   { chemin: "/facturation", libelle: "facturation", icone: Receipt, roles: ["super_admin", "admin", "secretariat"] },
   { chemin: "/utilisateurs", libelle: "gestion des comptes", icone: UserCog, roles: ["super_admin", "admin"] },
   { chemin: "/journal", libelle: "journal d'audit", icone: ClipboardList, roles: ["super_admin", "admin"] },
+  { chemin: "/sauvegardes", libelle: "sauvegardes chiffrées", icone: DatabaseBackup, roles: ["super_admin", "admin"] },
   { chemin: "/compte", libelle: "mon compte", icone: ShieldCheck, roles: [] },
 ];
 
