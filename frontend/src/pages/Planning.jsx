@@ -59,16 +59,16 @@ export default function Planning() {
         <input type="date" value={jour} onChange={(e) => e.target.value && setJour(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-1.5" />
         <Bouton icone={ChevronRight} onClick={() => setJour(ajouterJours(jour, 1))} petit>Suivant</Bouton>
         <Bouton onClick={() => setJour(aujourdhui())} petit icone={CalendarPlus}>Aujourd'hui</Bouton>
-        <span className="font-medium text-sky-800">{JOURS[d.getDay()]} {dateFr(jour)}</span>
+        <span className="font-medium text-emeraude">{JOURS[d.getDay()]} {dateFr(jour)}</span>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr><th>Poste</th>{CRENEAUX.map(([k, l]) => <th key={k}>{l}</th>)}</tr></thead>
           <tbody>
             {postes.map((po) => (
               <tr key={po.id}>
                 <td className="whitespace-nowrap align-top">
-                  <div className="font-semibold text-sky-800">{po.nom}</div>
+                  <div className="font-semibold text-emeraude">{po.nom}</div>
                   <div className="text-xs text-slate-500">{po.salle}</div>
                   {po.isolement && <Pastille couleur="violet">Isolement</Pastille>}
                   {po.statut === "maintenance" && <Pastille couleur="orange">Maintenance</Pastille>}
@@ -78,7 +78,7 @@ export default function Planning() {
                   return (
                     <td key={k} className="align-top min-w-[11rem]">
                       {s ? (
-                        <button onClick={() => setOuverte(s.id)} className="w-full text-left rounded-lg border border-slate-200 bg-slate-50 hover:bg-white px-2.5 py-2">
+                        <button onClick={() => setOuverte(s.id)} className="w-full text-left rounded-lg ring-1 ring-encre/10 bg-slate-50 hover:bg-white px-2.5 py-2">
                           <div className="font-medium flex items-center gap-1">{s.patient.nom} {s.patient.prenom}
                             {s.alertes?.some((a) => a.niveau === "critique") && <AlertTriangle size={14} className="text-rose-600" aria-label="Alerte critique" />}
                             {s.serologie_positive && <span title="Sérologie positive" className="text-rose-600 text-xs font-bold">●</span>}</div>

@@ -50,6 +50,11 @@ Rappel des principales :
   Variables Render : `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_OTP_TEMPLATE`, `WHATSAPP_RESET_TEMPLATE`, `FRONTEND_ORIGIN`. Sans elles, les boutons WhatsApp sont masqués.
 - Prochains lots : application Android (DG et médecins, dossiers anonymisés).
 
+## Charte graphique (lot 8, 17/11/2026 : « applique les styles, typographies et présentations de ZandGo »)
+- Reprise de ZandGo : couleurs `encre` #0A1E3D (barre latérale, bandeaux), `emeraude` #03316E (actions), `citron` #FF7A0A (élément actif, accent), `brume` #F3F5F9 (fond), `ardoise` #56627A ; Montserrat partout, Playfair Display italique
+  (`font-editorial`) pour les titres de bandeau ; thème CLAIR imposé ; barre latérale de 230 px, boutons en pilule, champs bleu clair arrondis, cartes `rounded-2xl ring-1 ring-encre/5`, connexion sur fond bleu nuit.
+- Les anciens noms `nuit` et `turquoise` du code pointent vers ces couleurs (`frontend/tailwind.config.js`). Logo : `composants/Logo.jsx` (goutte et pouls, « Dia » / « lyse »).
+
 ## Tests avant toute livraison
 - `cd backend && python -m pytest tests -q` (base en mémoire `mongomock`).
 - `cd frontend && npm test && npm run build`.

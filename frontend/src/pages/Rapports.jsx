@@ -50,7 +50,7 @@ const Ligne = ({ etiquette, valeur, max, couleur = "bg-turquoise-500", suffixe =
 );
 
 const Carte = ({ titre, valeur, sous, couleur = "text-nuit" }) => (
-  <div className="rounded-xl bg-white border border-slate-200 p-3"><div className="text-sm text-slate-500">{titre}</div><div className={`text-2xl font-semibold tabular-nums ${couleur}`}>{valeur}</div>{sous && <div className="text-xs text-slate-500">{sous}</div>}</div>
+  <div className="rounded-xl bg-white ring-1 ring-encre/10 p-3"><div className="text-sm text-slate-500">{titre}</div><div className={`text-2xl font-semibold tabular-nums ${couleur}`}>{valeur}</div>{sous && <div className="text-xs text-slate-500">{sous}</div>}</div>
 );
 
 export default function Rapports() {
@@ -93,17 +93,17 @@ export default function Rapports() {
           <Carte titre="Ultrafiltration moyenne" valeur={t.uf_moyenne_l != null ? `${nb(t.uf_moyenne_l, 2)} l` : "—"} />
           <Carte titre="Incidents déclarés" valeur={t.incidents} couleur={t.incidents ? "text-orange-700" : "text-nuit"} />
         </div>
-        <section className="rounded-2xl bg-white p-4 border border-slate-200 mb-4">
+        <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10 mb-4">
           <h2 className="font-semibold mb-3 flex items-center gap-2"><Activity size={18} className="text-turquoise-600" /> Séances réalisées ({REGROUPEMENTS.find((x) => x.valeur === regroupement).libelle.toLowerCase()})</h2>
           {r.serie.length ? <Barres donnees={r.serie} regroupement={regroupement} /> : <p className="text-sm text-slate-500">Aucune séance sur la période.</p>}
         </section>
         <div className="grid lg:grid-cols-2 gap-4 mb-4">
-          <section className="rounded-2xl bg-white p-4 border border-slate-200">
+          <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10">
             <h2 className="font-semibold mb-3 flex items-center gap-2"><Users size={18} className="text-violet-600" /> Par genre</h2>
             {d.genre.map((g) => <Ligne key={g.genre} etiquette={g.libelle} valeur={g.seances} max={maxGenre} couleur={g.genre === "F" ? "bg-pink-400" : g.genre === "M" ? "bg-sky-500" : "bg-slate-400"} suffixe={` (${g.patients} pat.)`} />)}
             {!d.genre.length && <p className="text-sm text-slate-500">Aucune donnée.</p>}
           </section>
-          <section className="rounded-2xl bg-white p-4 border border-slate-200">
+          <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10">
             <h2 className="font-semibold mb-3 flex items-center gap-2"><Users size={18} className="text-violet-600" /> Par tranche d'âge</h2>
             {d.tranches.map((x) => <Ligne key={x.tranche} etiquette={x.tranche} valeur={x.seances} max={maxTr} couleur="bg-violet-400" suffixe={` (${x.patients})`} />)}
             {!d.tranches.length && <p className="text-sm text-slate-500">Aucune donnée.</p>}

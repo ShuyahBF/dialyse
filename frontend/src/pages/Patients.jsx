@@ -133,7 +133,7 @@ function OngletAcces({ p, listes, peutEcrire, recharger }) {
     <div>
       <ul className="space-y-2 mb-4">
         {(p.acces_vasculaires || []).map((a) => (
-          <li key={a.id} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+          <li key={a.id} className="flex items-center gap-2 rounded-lg ring-1 ring-encre/10 px-3 py-2 text-sm">
             <div className="flex-1"><div className="font-medium">{a.type}</div><div className="text-slate-600">{a.localisation}{a.date_pose && ` · posé le ${dateFr(a.date_pose)}`}{a.remarques && ` · ${a.remarques}`}</div></div>
             {a.actif ? <Pastille couleur="vert">En service</Pastille> : <Pastille>Retiré {dateFr(a.date_retrait)}</Pastille>}
             {peutEcrire && a.actif && <BoutonIcone icone={Trash2} libelle="Retirer cet accès" couleur="text-rose-600" onClick={() => retirer(a)} />}
@@ -162,7 +162,7 @@ function OngletSeances({ p }) {
   return (
     <ul className="space-y-1.5 text-sm">
       {lignes.map((s) => (
-        <li key={s.id} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5">
+        <li key={s.id} className="flex items-center gap-2 rounded-lg ring-1 ring-encre/10 px-3 py-1.5">
           <span className="tabular-nums w-24">{dateFr(s.date)}</span><span className="w-14 capitalize">{s.creneau}</span><span className="flex-1">{s.poste_nom}</span>
           {s.alertes?.some((a) => a.niveau === "critique") && <AlertTriangle size={16} className="text-rose-600" aria-label="Alerte critique" />}
           <Pastille couleur={{ terminee: "vert", en_cours: "orange", planifiee: "bleu", annulee: "gris", absente: "rouge" }[s.statut]}>{s.statut_libelle}</Pastille>
@@ -271,10 +271,10 @@ export default function Patients() {
       </div>
       <div className="grid sm:grid-cols-2 gap-3 max-w-2xl">
         <div className="relative mb-3"><Search size={16} className="absolute left-3 top-3 text-slate-400" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher : nom, prénom, code, téléphone" className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-turquoise-500" /></div>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher : nom, prénom, code, téléphone" className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500" /></div>
         <Liste libelle="" valeur={statut} onChange={setStatut} options={listes.statuts} vide="Tous les statuts" />
       </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
             <ThTri cle="code" tri={tri}>Code</ThTri><ThTri cle="nom" tri={tri}>Nom</ThTri><ThTri cle="prenom" tri={tri}>Prénom</ThTri><ThTri cle="sexe" tri={tri}>Sexe</ThTri>
@@ -284,7 +284,7 @@ export default function Patients() {
           <tbody>
             {affichees.map((p) => (
               <tr key={p.id} onClick={() => setSelection(p.id)} onDoubleClick={() => setOuvert(p.id)} className={selection === p.id ? "ligne-selectionnee" : ""}>
-                <td className="font-semibold text-sky-800 whitespace-nowrap">{p.code}</td>
+                <td className="font-semibold text-emeraude whitespace-nowrap">{p.code}</td>
                 <td className="font-medium">{p.nom} {p.serologie_positive && <AlertTriangle size={14} className="inline text-rose-600" aria-label="Sérologie positive" title="Sérologie positive" />}</td>
                 <td>{p.prenom}</td><td>{p.sexe}</td><td className="num">{p.age}</td><td>{p.telephone}</td>
                 {medical && <td className="num">{nb(p.poids_sec)}</td>}

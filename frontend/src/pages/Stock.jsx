@@ -79,7 +79,7 @@ export default function Stock() {
           <div className="mb-3"><Bouton icone={Search} variante="orange" disabled={!lotRecherche.trim()} onClick={tracer}>Rechercher le lot</Bouton></div>
         </div>
       )}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
             <ThTri cle="code" tri={tri}>Code</ThTri><ThTri cle="nom" tri={tri}>Article</ThTri><ThTri cle="categorie" tri={tri}>Catégorie</ThTri>
@@ -89,7 +89,7 @@ export default function Stock() {
           <tbody>
             {affiches.map((a) => (
               <tr key={a.id} onClick={() => setSelection(a.id)} className={`${selection === a.id ? "ligne-selectionnee" : ""} ${a.actif === false ? "opacity-50" : ""}`}>
-                <td className="font-semibold text-sky-800">{a.code}</td><td className="font-medium">{a.nom}</td><td className="text-slate-600">{a.categorie}</td>
+                <td className="font-semibold text-emeraude">{a.code}</td><td className="font-medium">{a.nom}</td><td className="text-slate-600">{a.categorie}</td>
                 <td className={`num font-semibold ${a.statut_stock === "rupture" ? "text-rose-700" : a.statut_stock === "bas" ? "text-orange-700" : "text-emerald-700"}`}>{nb(a.stock, 2)} <span className="text-xs font-normal text-slate-500">{a.unite}</span></td>
                 <td className="num">{nb(a.seuil_alerte, 2)}</td><td className="num">{nb(a.par_seance, 2)}</td>
                 <td>{dateFr(a.prochaine_peremption)} {PER[a.statut_peremption][1] && <Pastille couleur={PER[a.statut_peremption][0]} icone={AlertTriangle}>{PER[a.statut_peremption][1]}</Pastille>}</td>
@@ -144,7 +144,7 @@ export default function Stock() {
           {peutEcrire && <Bouton icone={ClipboardCheck} variante="orange" onClick={() => setModal({ mode: "ajust", article: detail.article, form: { lot: "", quantite_constatee: "", motif: "" } })}>Inventaire d'un lot</Bouton>}
           <Bouton onClick={() => setDetail(null)}>Fermer</Bouton></>}>
           <table className="tableau mb-4"><thead><tr><th>Lot</th><th>Péremption</th><th className="num">Restant</th><th>État</th></tr></thead>
-            <tbody>{detail.lots.map((l) => <tr key={l.id}><td className="font-medium text-sky-800">{l.numero}</td><td>{dateFr(l.peremption)}</td><td className="num">{nb(l.quantite_restante, 2)}</td>
+            <tbody>{detail.lots.map((l) => <tr key={l.id}><td className="font-medium text-emeraude">{l.numero}</td><td>{dateFr(l.peremption)}</td><td className="num">{nb(l.quantite_restante, 2)}</td>
               <td>{PER[l.statut_peremption][1] ? <Pastille couleur={PER[l.statut_peremption][0]} icone={AlertTriangle}>{PER[l.statut_peremption][1]}</Pastille> : <span className="text-slate-400">—</span>}</td></tr>)}
               {!detail.lots.length && <tr><td colSpan={4} className="text-slate-500">Aucun lot.</td></tr>}</tbody></table>
           <h3 className="font-semibold mb-2">Derniers mouvements</h3>
@@ -158,7 +158,7 @@ export default function Stock() {
           {!trace.length ? <p className="text-sm text-slate-500">Ce lot n'a été utilisé dans aucune séance.</p> : (
             <><p className="text-sm text-slate-600 mb-2">{trace.length} séance(s) : à contacter en cas de rappel de lot.</p>
               <table className="tableau"><thead><tr><th>Date</th><th>Créneau</th><th>Patient</th><th>Code</th><th>Téléphone</th><th>Poste</th></tr></thead>
-                <tbody>{trace.map((t, i) => <tr key={i}><td>{dateFr(t.date)}</td><td className="capitalize">{t.creneau}</td><td className="font-medium">{t.patient}</td><td className="text-sky-800">{t.code}</td><td>{t.telephone}</td><td>{t.poste}</td></tr>)}</tbody></table></>
+                <tbody>{trace.map((t, i) => <tr key={i}><td>{dateFr(t.date)}</td><td className="capitalize">{t.creneau}</td><td className="font-medium">{t.patient}</td><td className="text-emeraude">{t.code}</td><td>{t.telephone}</td><td>{t.poste}</td></tr>)}</tbody></table></>
           )}
         </Modal>
       )}

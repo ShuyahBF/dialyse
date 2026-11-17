@@ -1,16 +1,19 @@
-// Mise en page du portail : barre latérale (menus selon le rôle, majuscule à chaque mot : règle 18), en-tête, version affichée.
-import { Activity, BarChart3, CalendarDays, ClipboardList, DatabaseBackup, LayoutDashboard, LogOut, Monitor, Package, Receipt, ShieldCheck, UserCog, Users } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+// Cadre du portail (présentation ZandGo) : barre latérale bleu nuit de 230 px (logo, menus à pictogrammes, élément actif en orange,
+// nom + rôle en pastille, déconnexion, version), menu replié derrière un bouton « Menu » sur téléphone. Majuscule à chaque mot (règle 18).
+import { BarChart3, CalendarDays, ClipboardList, DatabaseBackup, LayoutDashboard, LogOut, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useApp } from "../lib/contexte.jsx";
 import { titreMenu } from "../lib/format.js";
 import BandeauVersion from "./BandeauVersion.jsx";
+import Logo from "./Logo.jsx";
 import ProtectionEcran from "./ProtectionEcran.jsx";
 
 // Chaque entrée : chemin, libellé, pictogramme, rôles autorisés (liste vide = tous).
 const MENU = [
   { chemin: "/", libelle: "tableau de bord", icone: LayoutDashboard, roles: ["super_admin", "admin", "direction", "medecin", "infirmier"] },
-  { chemin: "/planning", libelle: "planning des séances", icone: CalendarDays, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/rapports", libelle: "rapports", icone: BarChart3, roles: ["super_admin", "admin", "direction", "medecin", "infirmier"] },
+  { chemin: "/planning", libelle: "planning des séances", icone: CalendarDays, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/patients", libelle: "patients", icone: Users, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/postes", libelle: "postes de dialyse", icone: Monitor, roles: [] },
   { chemin: "/stock", libelle: "consommables et stocks", icone: Package, roles: ["super_admin", "admin", "medecin", "infirmier", "technicien"] },
@@ -23,38 +26,38 @@ const MENU = [
 
 export default function MiseEnPage() {
   const { utilisateur, deconnecter } = useApp();
+  const { pathname } = useLocation();
+  const [ouvert, setOuvert] = useState(false);            // menu replié sur téléphone, refermé après chaque choix
+  useEffect(() => setOuvert(false), [pathname]);
   const entrees = MENU.filter((m) => m.roles.length === 0 || m.roles.includes(utilisateur.role));
   return (
     <ProtectionEcran>
-      <div className="min-h-dvh flex flex-col md:flex-row">
-        <aside className="md:w-64 bg-nuit text-white flex md:flex-col md:min-h-dvh">
-          <div className="hidden md:flex items-center gap-2 px-5 py-5 text-lg font-semibold">
-            <Activity className="text-sky-300" /> Dialyse
+      <div className="min-h-screen overflow-x-clip md:grid md:grid-cols-[230px_1fr]">
+        <aside className="barre-laterale sticky top-0 z-40 flex max-h-screen flex-col gap-1 overflow-y-auto bg-encre p-4 text-white md:h-screen md:overscroll-contain">
+          <div className="flex items-center justify-between px-2 md:mb-4">
+            <Logo clair />
+            <button type="button" onClick={() => setOuvert((o) => !o)} aria-expanded={ouvert} aria-controls="menu-portail"
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/20 md:hidden">
+              {ouvert ? <X size={18} /> : <Menu size={18} />}{ouvert ? "Fermer" : "Menu"}
+            </button>
           </div>
-          <nav className="flex md:flex-col gap-1 p-2 overflow-x-auto md:overflow-visible flex-1">
+          <nav id="menu-portail" className={`${ouvert ? "flex" : "hidden"} mt-3 flex-col gap-1 md:mt-0 md:flex`}>
             {entrees.map(({ chemin, libelle, icone: Icone }) => (
               <NavLink key={chemin} to={chemin} end={chemin === "/"}
-                className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 whitespace-nowrap ${isActive ? "bg-turquoise-600 text-white" : "text-sky-100 hover:bg-white/10"}`}>
-                <Icone size={18} /> {titreMenu(libelle)}
+                className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm font-semibold ${isActive ? "bg-white/10 text-citron" : "text-white/80 hover:bg-white/5 hover:text-white"}`}>
+                <Icone size={18} className="shrink-0" /> {titreMenu(libelle)}
               </NavLink>
             ))}
           </nav>
-          <div className="hidden md:block p-4 text-sky-200 text-xs border-t border-white/10">
-            <div className="font-medium text-white">{utilisateur.nom}</div>
-            <div className="mb-2">{utilisateur.role_libelle}</div>
-            <button onClick={deconnecter} className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-white hover:bg-white/20">
-              <LogOut size={16} /> Se déconnecter
-            </button>
-            <BandeauVersion className="!text-sky-300 mt-3" />
+          <div className={`${ouvert ? "block" : "hidden"} mt-auto space-y-2 px-2 pt-6 text-xs text-white/60 md:block`}>
+            <p className="truncate font-semibold text-white/85">{utilisateur.nom}</p>
+            <span className="inline-block rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-citron">{utilisateur.role_libelle}</span>
+            <button type="button" onClick={deconnecter} className="flex items-center gap-2 font-semibold text-white/80 hover:text-white"><LogOut size={14} /> Se déconnecter</button>
+            <BandeauVersion className="!text-white/50" />
           </div>
         </aside>
-        <main className="flex-1 min-w-0 p-3 sm:p-6">
-          <div className="md:hidden flex items-center justify-between mb-3 text-sm">
-            <span className="font-medium">{utilisateur.nom}</span>
-            <button onClick={deconnecter} className="inline-flex items-center gap-1 text-rose-700"><LogOut size={16} /> Se déconnecter</button>
-          </div>
+        <main className="min-w-0 p-4 sm:p-6 lg:p-8">
           <Outlet />
-          <BandeauVersion className="md:hidden mt-6 text-center" />
         </main>
       </div>
     </ProtectionEcran>

@@ -57,7 +57,7 @@ function Factures({ admin, listes }) {
           <Bouton icone={Wand2} variante="orange" onClick={generer}>Facturer les séances terminées</Bouton>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
             <ThTri cle="numero" tri={tri}>N°</ThTri><ThTri cle="date" tri={tri}>Date</ThTri><ThTri cle="patient_nom" tri={tri}>Patient</ThTri><ThTri cle="organisme_nom" tri={tri}>Organisme</ThTri>
@@ -66,7 +66,7 @@ function Factures({ admin, listes }) {
           <tbody>
             {affichees.map((f) => (
               <tr key={f.id} onClick={() => setSelection(f.id)} onDoubleClick={() => setOuverte(f)} className={selection === f.id ? "ligne-selectionnee" : ""}>
-                <td className="font-semibold text-sky-800 whitespace-nowrap">{f.numero}</td><td>{dateFr(f.date)}</td><td className="font-medium">{f.patient_nom}</td><td>{f.organisme_nom}</td>
+                <td className="font-semibold text-emeraude whitespace-nowrap">{f.numero}</td><td>{dateFr(f.date)}</td><td className="font-medium">{f.patient_nom}</td><td>{f.organisme_nom}</td>
                 <td className="num">{fcfa(f.total)}</td><td className={`num font-semibold ${f.reste > 0 ? "text-rose-700" : "text-emerald-700"}`}>{fcfa(f.reste)}</td>
                 <td><Pastille couleur={COULEUR[f.statut]}>{f.statut_libelle}</Pastille></td>
                 <td className="whitespace-nowrap"><BoutonIcone icone={Receipt} libelle="Ouvrir la facture et les paiements" onClick={() => setOuverte(f)} />
@@ -135,7 +135,7 @@ function Tarifs({ admin }) {
   return (
     <div>
       {admin && <div className="mb-3"><Bouton icone={Plus} variante="principal" onClick={() => setModal({ form: { libelle: "", prix: "", automatique: false, actif: true } })}>Nouveau tarif</Bouton></div>}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white"><table className="tableau">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white"><table className="tableau">
         <thead><tr><ThTri cle="libelle" tri={tri}>Acte</ThTri><ThTri cle="prix" tri={tri} numerique>Prix</ThTri><ThTri cle="automatique" tri={tri}>Sur chaque séance</ThTri><ThTri cle="actif" tri={tri}>État</ThTri>{admin && <th>Actions</th>}</tr></thead>
         <tbody>{trierLignes(lignes, tri.cle, tri.sens).map((t) => <tr key={t.id}><td className="font-medium">{t.libelle}</td><td className="num font-semibold">{fcfa(t.prix)}</td>
           <td>{t.automatique ? <Pastille couleur="vert">Automatique</Pastille> : <span className="text-slate-400">—</span>}</td><td>{t.actif ? <Pastille couleur="vert">Actif</Pastille> : <Pastille>Inactif</Pastille>}</td>
@@ -168,9 +168,9 @@ function Organismes({ admin, listes }) {
   return (
     <div>
       {admin && <div className="mb-3"><Bouton icone={Plus} variante="principal" onClick={() => setModal({ form: { nom: "", type: "", taux: 80, contact: "", actif: true } })}>Nouvel organisme</Bouton></div>}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white"><table className="tableau">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white"><table className="tableau">
         <thead><tr><ThTri cle="nom" tri={tri}>Organisme</ThTri><ThTri cle="type" tri={tri}>Type</ThTri><ThTri cle="taux" tri={tri} numerique>Prise en charge</ThTri><ThTri cle="contact" tri={tri}>Contact</ThTri><ThTri cle="actif" tri={tri}>État</ThTri>{admin && <th>Actions</th>}</tr></thead>
-        <tbody>{trierLignes(lignes, tri.cle, tri.sens).map((o) => <tr key={o.id}><td className="font-medium text-sky-800">{o.nom}</td><td>{o.type}</td><td className="num font-semibold">{o.taux} %</td><td>{o.contact}</td>
+        <tbody>{trierLignes(lignes, tri.cle, tri.sens).map((o) => <tr key={o.id}><td className="font-medium text-emeraude">{o.nom}</td><td>{o.type}</td><td className="num font-semibold">{o.taux} %</td><td>{o.contact}</td>
           <td>{o.actif ? <Pastille couleur="vert">Actif</Pastille> : <Pastille>Inactif</Pastille>}</td>
           {admin && <td><BoutonIcone icone={Pencil} libelle="Modifier l'organisme" onClick={() => setModal({ org: o, form: { nom: o.nom, type: o.type, taux: o.taux, contact: o.contact, actif: o.actif } })} /></td>}</tr>)}
           {!lignes.length && <tr><td colSpan={6} className="text-center text-slate-500 py-6">Aucun organisme payeur.</td></tr>}</tbody></table></div>
@@ -191,7 +191,7 @@ function Synthese() {
   const [s, setS] = useState(null);
   const charger = useCallback(async () => setS(await api(`/facturation/synthese?du=${du}&au=${au}`)), [du, au]);
   useEffect(() => { charger().catch((e) => toast(e.message, "erreur")); }, [charger, toast]);
-  const Carte = ({ titre, v, c }) => <div className="rounded-xl bg-white border border-slate-200 p-3"><div className="text-sm text-slate-500">{titre}</div><div className={`text-xl font-semibold tabular-nums ${c}`}>{fcfa(v)}</div></div>;
+  const Carte = ({ titre, v, c }) => <div className="rounded-xl bg-white ring-1 ring-encre/10 p-3"><div className="text-sm text-slate-500">{titre}</div><div className={`text-xl font-semibold tabular-nums ${c}`}>{fcfa(v)}</div></div>;
   return (
     <div>
       <div className="flex flex-wrap items-end gap-3 mb-3">

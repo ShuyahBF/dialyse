@@ -64,12 +64,12 @@ export default function Sauvegardes() {
           <div className="font-semibold">{e.cle_configuree ? "Clé de chiffrement configurée" : "Clé de chiffrement ABSENTE"}</div>
           <div className="text-xs text-slate-600">{e.cle_configuree ? "Gardez la variable SAUVEGARDE_CLE en lieu sûr : sans elle, aucune sauvegarde n'est lisible." : "Définissez SAUVEGARDE_CLE (16 caractères minimum) dans Render pour activer les sauvegardes."}</div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3"><ShieldCheck size={18} className="text-turquoise-600" /><div className="font-semibold">Sauvegarde automatique</div>
+        <div className="rounded-xl ring-1 ring-encre/10 bg-white p-3"><ShieldCheck size={18} className="text-turquoise-600" /><div className="font-semibold">Sauvegarde automatique</div>
           <div className="text-xs text-slate-600">Chaque jour vers {e.heure_auto_utc} h (UTC). Dernière vérifiée : {e.derniere_auto ? dateHeureFr(e.derniere_auto) : "aucune"}.</div></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3"><DatabaseBackup size={18} className="text-violet-600" /><div className="font-semibold">Conservation</div>
+        <div className="rounded-xl ring-1 ring-encre/10 bg-white p-3"><DatabaseBackup size={18} className="text-violet-600" /><div className="font-semibold">Conservation</div>
           <div className="text-xs text-slate-600">{e.retention.auto} automatiques, {e.retention.manuelle} manuelles, {e.retention.avant_restauration} copies de sécurité avant restauration.</div></div>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
             <ThTri cle="cree_le" tri={tri}>Date</ThTri><ThTri cle="origine_libelle" tri={tri}>Origine</ThTri><ThTri cle="par" tri={tri}>Par</ThTri><ThTri cle="taille" tri={tri} numerique>Taille</ThTri>
@@ -78,7 +78,7 @@ export default function Sauvegardes() {
           <tbody>
             {lignes.map((f) => (
               <tr key={f.id} onClick={() => setSelection(f.id)} className={selection === f.id ? "ligne-selectionnee" : ""}>
-                <td className="whitespace-nowrap font-medium text-sky-800">{dateHeureFr(f.cree_le)}</td><td><Pastille couleur={ORIGINE[f.origine][0]}>{ORIGINE[f.origine][1]}</Pastille></td><td>{f.par}</td>
+                <td className="whitespace-nowrap font-medium text-emeraude">{dateHeureFr(f.cree_le)}</td><td><Pastille couleur={ORIGINE[f.origine][0]}>{ORIGINE[f.origine][1]}</Pastille></td><td>{f.par}</td>
                 <td className="num">{taille(f.taille)}</td><td className="num">{nb(f.total, 0)}</td>
                 <td>{f.verifiee ? <Pastille couleur="vert" icone={ShieldCheck}>Intacte</Pastille> : <Pastille couleur="rouge" icone={AlertTriangle}>À vérifier</Pastille>}</td>
                 <td>{f.cle_actuelle ? <Pastille couleur="vert">Clé actuelle</Pastille> : <Pastille couleur="orange" icone={AlertTriangle}>Autre clé</Pastille>}</td>

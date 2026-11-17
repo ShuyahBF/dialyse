@@ -44,7 +44,7 @@ export default function Postes() {
         </div>
       </div>
       <BandeauVersion detaille className="mb-3" />
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
             <ThTri cle="nom" tri={tri}>Poste</ThTri><ThTri cle="salle" tri={tri}>Salle</ThTri><ThTri cle="marque" tri={tri}>Machine</ThTri>
@@ -54,7 +54,7 @@ export default function Postes() {
           <tbody>
             {affichees.map((p) => (
               <tr key={p.id} onClick={() => setSelection(p.id)} className={selection === p.id ? "ligne-selectionnee" : ""}>
-                <td className="font-semibold text-sky-800">{p.nom}</td><td>{p.salle}</td><td>{[p.marque, p.modele].filter(Boolean).join(" ")}</td>
+                <td className="font-semibold text-emeraude">{p.nom}</td><td>{p.salle}</td><td>{[p.marque, p.modele].filter(Boolean).join(" ")}</td>
                 <td><Pastille couleur={COULEUR_ETAT[p.statut]}>{p.statut_libelle}</Pastille></td>
                 <td>{p.isolement ? <Pastille couleur="violet" icone={ShieldAlert}>Isolement</Pastille> : <span className="text-slate-400">—</span>}</td>
                 <td>{dateFr(p.derniere_maintenance)}</td>

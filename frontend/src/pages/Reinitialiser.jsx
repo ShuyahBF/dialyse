@@ -1,11 +1,12 @@
 // Page ouverte depuis le lien WhatsApp « mot de passe oublié » : choix du nouveau mot de passe (œil sur les deux champs, lien à usage unique).
-import { Activity, KeyRound } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton from "../composants/Bouton.jsx";
 import ChampMotDePasse from "../composants/ChampMotDePasse.jsx";
 import { Champ } from "../composants/Champs.jsx";
+import Logo from "../composants/Logo.jsx";
 import { api } from "../lib/api.js";
 import { useApp } from "../lib/contexte.jsx";
 
@@ -21,9 +22,9 @@ export default function Reinitialiser() {
     setFini(true);
   };
   return (
-    <div className="min-h-dvh flex items-center justify-center p-4 bg-gradient-to-br from-sky-100 via-white to-turquoise-100">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <div className="flex flex-col items-center mb-4"><div className="rounded-2xl bg-turquoise-600 p-3 text-white mb-2"><Activity size={28} /></div><h1 className="text-xl font-semibold">Nouveau mot de passe</h1></div>
+    <div className="grid min-h-screen place-items-center bg-encre px-4 py-10">
+      <main className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+        <div className="flex flex-col items-center mb-4"><Logo taille={40} /><h1 className="mt-5 font-editorial text-2xl font-bold italic">Nouveau mot de passe</h1></div>
         {fini ? (
           <><p className="text-sm text-emerald-700 mb-3">Mot de passe modifié. Vos clés d'accès et empreintes enregistrées ont été retirées : vous pourrez les recréer après connexion.</p><Link to="/" className="text-turquoise-700 underline">Retour à la connexion</Link></>
         ) : (
@@ -35,7 +36,7 @@ export default function Reinitialiser() {
           </>
         )}
         <BandeauVersion className="text-center mt-4" />
-      </div>
+      </main>
     </div>
   );
 }

@@ -28,7 +28,7 @@ export default function Journal() {
       </div>
       <BandeauVersion detaille className="mb-3" />
       <div className="max-w-xs"><Liste libelle="Filtrer par action" valeur={action} onChange={setAction} options={actions} vide="Toutes les actions" /></div>
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
             <ThTri cle="quand" tri={tri}>Date et heure</ThTri><ThTri cle="acteur" tri={tri}>Utilisateur</ThTri>
@@ -38,7 +38,7 @@ export default function Journal() {
             {affichees.map((l, i) => (
               <tr key={i} onClick={() => setSelection(i)} className={selection === i ? "ligne-selectionnee" : ""}>
                 <td className="whitespace-nowrap">{dateHeureFr(l.quand)}</td>
-                <td className="font-medium text-sky-800">{l.acteur || "—"}</td><td>{l.role}</td>
+                <td className="font-medium text-emeraude">{l.acteur || "—"}</td><td>{l.role}</td>
                 <td><span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{l.action}</span></td><td className="text-slate-600">{l.detail}</td>
               </tr>
             ))}
