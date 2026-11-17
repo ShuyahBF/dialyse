@@ -10,7 +10,7 @@ Sur Render : onglet « Environment » du service.
   SAUVEGARDE_CLE           clé de chiffrement des sauvegardes (16 caractères minimum, secret saisi par le propriétaire ; à garder en lieu sûr)
   TACHES_DE_FOND           « 0 » pour désactiver les tâches planifiées (tests)
   WEBAUTHN_RP_ID           nom de domaine du site pour les clés d'accès (défaut : domaine de FRONTEND_ORIGIN) ; le changer oblige à recréer les clés
-  WHATSAPP_ACCESS_TOKEN / WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_OTP_TEMPLATE / WHATSAPP_RESET_TEMPLATE  API WhatsApp Cloud (secrets saisis dans Render)
+  LILUVINE_WA_URL / LILUVINE_WA_HMAC / LILUVINE_WA_EMETTEUR  WhatsApp par « Liluvine Standard » de SAWALI (la clé HMAC est un secret saisi dans Render)
   FRONTEND_ORIGIN          adresse du site web (pour CORS), ex. https://dialyse.onrender.com
   PRESENCE_SAWALI          « 0 » pour désactiver le signal de présence (tests)
 """

@@ -99,7 +99,7 @@ export default function Compte() {
       {acces && (
         <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10 mb-4">
           <h2 className="font-semibold mb-2 flex items-center gap-2"><MessageCircle size={18} className="text-emerald-600" /> Numéro WhatsApp</h2>
-          {!acces.whatsapp_disponible && <p className="text-sm text-slate-500">WhatsApp n'est pas encore activé sur le serveur (variables WHATSAPP_… à saisir dans Render).</p>}
+          {!acces.whatsapp_disponible && <p className="text-sm text-slate-500">WhatsApp (Liluvine) n'est pas encore activé sur le serveur : la clé LILUVINE_WA_HMAC reste à saisir dans Render.</p>}
           {acces.whatsapp_disponible && (acces.telephone_verifie ? (
             <div>
               <p className="text-sm mb-2">Numéro vérifié : <b>{acces.telephone}</b>. Il permet la connexion par code WhatsApp et le lien « mot de passe oublié ».</p>
