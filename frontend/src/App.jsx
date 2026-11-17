@@ -13,6 +13,7 @@ import Postes from "./pages/Postes.jsx";
 import Reinitialiser from "./pages/Reinitialiser.jsx";
 import Rapports from "./pages/Rapports.jsx";
 import Suivi from "./pages/Suivi.jsx";
+import ModelesAdhesion from "./pages/ModelesAdhesion.jsx";
 import Sauvegardes from "./pages/Sauvegardes.jsx";
 import Stock from "./pages/Stock.jsx";
 import Tableau from "./pages/Tableau.jsx";
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="facturation" element={<Facturation />} />
             <Route path="rapports" element={<Rapports />} />
             <Route path="suivi" element={<Suivi />} />
+            <Route path="modeles" element={<ModelesAdhesion />} />
             <Route path="sauvegardes" element={<Sauvegardes />} />
             <Route path="stock" element={<Stock />} />
             <Route path="utilisateurs" element={<Utilisateurs />} />

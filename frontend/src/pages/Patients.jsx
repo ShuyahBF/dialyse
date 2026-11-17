@@ -1,6 +1,6 @@
 // Patients : liste triable avec recherche, création, et DOSSIER en fenêtre modale (règle 20) à onglets :
 // Identité · Médical · Prescription · Accès vasculaires · Séances. Les onglets médicaux n'existent pas pour le secrétariat.
-import { AlertTriangle, FolderOpen, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardCheck, FolderOpen, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Bilans from "../composants/Bilans.jsx";
 import Bouton, { BoutonIcone } from "../composants/Bouton.jsx";
@@ -50,6 +50,45 @@ function OngletIdentite({ p, listes, peutEcrire, enregistrer, organismes }) {
       <Texte libelle="Téléphone" valeur={v.pa_tel} onChange={(x) => f.maj("pa_tel", x)} />
       <Texte libelle="Lien" valeur={v.pa_lien} onChange={(x) => f.maj("pa_lien", x)} placeholder="Époux, fils…" />
       {peutEcrire && <BarreEnregistrement modifie={f.modifie} onEnregistrer={envoyer} desactive={!v.nom || !v.prenom || !v.sexe || !v.date_naissance} />}
+    </fieldset>
+  );
+}
+
+// Pièces à fournir pour l'ADHÉSION à la file active (liste du serveur : pièce d'identité, bulletin de référence, bilans, sérologies, échographie, certificat d'indigence).
+// On note seulement la RÉCEPTION de chaque pièce, jamais son contenu. Enregistrement par bouton (modifié, non enregistré : règle 15).
+function OngletPieces({ p, peutEcrire, enregistrerPieces, changerModele }) {
+  const liste = p.modele_adhesion?.pieces || [];
+  const [modeles, setModeles] = useState([]);
+  useEffect(() => { api("/modeles-adhesion").then((r) => setModeles(r.modeles)).catch(() => {}); }, []);
+  const init = Object.fromEntries(liste.map((x) => { const v = p.pieces_admission?.[x.cle] || {}; return [x.cle, { statut: v.statut || "manquante", date: v.date || "", note: v.note || "" }]; }));
+  const f = useFormulaire(init);
+  const v = f.valeurs;
+  const maj = (cle, champ, x) => f.maj(cle, { ...v[cle], [champ]: x });
+  const recues = liste.filter((x) => x.obligatoire && v[x.cle]?.statut === "recue").length, total = liste.filter((x) => x.obligatoire).length;
+  const etats = [{ valeur: "manquante", libelle: "Manquante" }, { valeur: "recue", libelle: "Reçue" }];
+  return (
+    <fieldset disabled={!peutEcrire}>
+      {modeles.length > 1 && (
+        <Liste libelle="Modèle de dossier (variante du centre)" valeur={p.modele_adhesion?.id} onChange={(id) => id && id !== p.modele_adhesion?.id && changerModele(id)}
+          options={modeles.map((m) => ({ valeur: m.id, libelle: m.nom + (m.par_defaut ? " (par défaut)" : "") }))} vide={null} />
+      )}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <Pastille couleur={recues === total ? "vert" : "orange"} icone={recues === total ? CheckCircle2 : AlertTriangle}>{recues} / {total} pièces obligatoires reçues</Pastille>
+        <span className="text-xs text-slate-500">{recues === total ? "Dossier d'adhésion complet." : "Dossier incomplet : les pièces manquantes sont à réclamer au patient."}</span>
+      </div>
+      <ul className="space-y-3">
+        {liste.map((x) => (
+          <li key={x.cle} className={`rounded-xl p-3 ring-1 ${v[x.cle]?.statut === "recue" ? "ring-emerald-200 bg-emerald-50/40" : "ring-orange-200 bg-orange-50/40"}`}>
+            <p className="text-sm font-medium mb-1">{x.libelle}{!x.obligatoire && <span className="ml-1 text-xs font-normal text-slate-500">(facultatif)</span>}</p>
+            <div className="grid sm:grid-cols-3 gap-2">
+              <Liste libelle="État" valeur={v[x.cle].statut} onChange={(e) => maj(x.cle, "statut", e)} options={x.obligatoire ? etats : [...etats, { valeur: "sans_objet", libelle: "Sans objet" }]} vide={null} />
+              {v[x.cle].statut === "recue" && <Texte libelle="Reçue le" type="date" valeur={v[x.cle].date} onChange={(e) => maj(x.cle, "date", e)} />}
+              <Texte libelle="Remarque" valeur={v[x.cle].note} onChange={(e) => maj(x.cle, "note", e)} />
+            </div>
+          </li>
+        ))}
+      </ul>
+      {peutEcrire && <BarreEnregistrement modifie={f.modifie} onEnregistrer={async () => { await enregistrerPieces(v); f.reinitialiser(v); }} />}
     </fieldset>
   );
 }
@@ -194,10 +233,18 @@ function Dossier({ id, onFermer, onChange }) {
     const maj = await avecToast("Enregistrement du dossier", () => api(`/patients/${id}`, { methode: "PUT", corps }), () => "Dossier enregistré");
     setP(maj); reinit?.(valeurs); onChange();
   };
+  const enregistrerPieces = async (corps) => {
+    const maj = await avecToast("Enregistrement des pièces du dossier", () => api(`/patients/${id}/pieces`, { methode: "PUT", corps }), () => "Pièces du dossier enregistrées");
+    setP(maj); onChange();
+  };
+  const changerModele = async (modele_id) => {
+    const maj = await avecToast("Changement du modèle de dossier", () => api(`/patients/${id}/modele-adhesion`, { methode: "PUT", corps: { modele_id } }), () => "Modèle de dossier changé");
+    setP(maj); onChange();
+  };
   const peutIdentite = ["secretariat", "medecin", "infirmier", "admin", "super_admin"].includes(utilisateur.role);
   const peutMedical = ["medecin", "infirmier", "admin", "super_admin"].includes(utilisateur.role);
   const peutPrescrire = ["medecin", "admin", "super_admin"].includes(utilisateur.role);
-  const onglets = [["identite", "Identité"], ...(medical ? [["medical", "Médical"], ["prescription", "Prescription"], ["acces", "Accès vasculaires"], ["bilans", "Bilans"], ["seances", "Séances"]] : [])];
+  const onglets = [["identite", "Identité"], ["pieces", "Pièces du dossier"], ...(medical ? [["medical", "Médical"], ["prescription", "Prescription"], ["acces", "Accès vasculaires"], ["bilans", "Bilans"], ["seances", "Séances"]] : [])];
   return (
     <Modal titre={`${p.nom} ${p.prenom} — ${p.code}`} large onFermer={onFermer} pied={<Bouton onClick={onFermer}>Fermer</Bouton>}>
       <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -212,6 +259,7 @@ function Dossier({ id, onFermer, onChange }) {
         ))}
       </div>
       {onglet === "identite" && <OngletIdentite p={p} listes={listes} peutEcrire={peutIdentite} enregistrer={enregistrer} organismes={organismes} />}
+      {onglet === "pieces" && <OngletPieces key={p.modele_adhesion?.id} p={p} peutEcrire={peutIdentite} enregistrerPieces={enregistrerPieces} changerModele={changerModele} />}
       {onglet === "medical" && <OngletMedical p={p} listes={listes} peutEcrire={peutMedical} enregistrer={enregistrer} />}
       {onglet === "prescription" && <OngletPrescription p={p} listes={listes} peutEcrire={peutPrescrire} enregistrer={enregistrer} />}
       {onglet === "acces" && <OngletAcces p={p} listes={listes} peutEcrire={peutMedical} recharger={charger} />}
@@ -252,14 +300,15 @@ export default function Patients() {
   const [lignes, setLignes] = useState([]);
   const [q, setQ] = useState("");
   const [statut, setStatut] = useState("actif");
+  const [dossier, setDossier] = useState("");                 // « incomplet » : seulement les dossiers d'adhésion auxquels il manque des pièces
   const [ouvert, setOuvert] = useState(null);
   const [nouveau, setNouveau] = useState(false);
   const [selection, setSelection] = useState(null);
   const tri = useTri();
   const medical = voitMedical(utilisateur.role);
-  const charger = useCallback(() => api(`/patients?q=${encodeURIComponent(q)}&statut=${statut}`).then(setLignes), [q, statut]);
+  const charger = useCallback(() => api(`/patients?q=${encodeURIComponent(q)}&statut=${statut}&dossier=${dossier}`).then(setLignes), [q, statut, dossier]);
   useEffect(() => { const t = setTimeout(() => charger().catch((e) => toast(e.message, "erreur")), 250); return () => clearTimeout(t); }, [charger, toast]);
-  const affichees = trierLignes(lignes, tri.cle, tri.sens);
+  const affichees = trierLignes(lignes.map((l) => ({ ...l, pieces: l.dossier_adhesion?.recues ?? 0 })), tri.cle, tri.sens);
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -273,13 +322,14 @@ export default function Patients() {
         <div className="relative mb-3"><Search size={16} className="absolute left-3 top-3 text-slate-400" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher : nom, prénom, code, téléphone" className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500" /></div>
         <Liste libelle="" valeur={statut} onChange={setStatut} options={listes.statuts} vide="Tous les statuts" />
+        <Liste libelle="" valeur={dossier} onChange={setDossier} options={[{ valeur: "incomplet", libelle: "Dossiers d'adhésion incomplets" }]} vide="Tous les dossiers d'adhésion" />
       </div>
       <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
             <ThTri cle="code" tri={tri}>Code</ThTri><ThTri cle="nom" tri={tri}>Nom</ThTri><ThTri cle="prenom" tri={tri}>Prénom</ThTri><ThTri cle="sexe" tri={tri}>Sexe</ThTri>
             <ThTri cle="age" tri={tri} numerique>Âge</ThTri><ThTri cle="telephone" tri={tri}>Téléphone</ThTri>
-            {medical && <ThTri cle="poids_sec" tri={tri} numerique>Poids sec (kg)</ThTri>}<ThTri cle="statut_libelle" tri={tri}>Statut</ThTri><th>Dossier</th>
+            {medical && <ThTri cle="poids_sec" tri={tri} numerique>Poids sec (kg)</ThTri>}<ThTri cle="statut_libelle" tri={tri}>Statut</ThTri><ThTri cle="pieces" tri={tri} numerique>Pièces</ThTri><th>Dossier</th>
           </tr></thead>
           <tbody>
             {affichees.map((p) => (
@@ -289,10 +339,11 @@ export default function Patients() {
                 <td>{p.prenom}</td><td>{p.sexe}</td><td className="num">{p.age}</td><td>{p.telephone}</td>
                 {medical && <td className="num">{nb(p.poids_sec)}</td>}
                 <td><Pastille couleur={COULEUR_STATUT[p.statut]}>{p.statut_libelle}</Pastille></td>
+                <td className="num"><Pastille couleur={p.dossier_adhesion?.complet ? "vert" : "orange"} icone={p.dossier_adhesion?.complet ? CheckCircle2 : ClipboardCheck}>{p.dossier_adhesion?.recues}/{p.dossier_adhesion?.total}</Pastille></td>
                 <td><BoutonIcone icone={FolderOpen} libelle="Ouvrir le dossier" onClick={() => setOuvert(p.id)} /></td>
               </tr>
             ))}
-            {!affichees.length && <tr><td colSpan={9} className="text-center text-slate-500 py-6">Aucun patient.</td></tr>}
+            {!affichees.length && <tr><td colSpan={10} className="text-center text-slate-500 py-6">Aucun patient.</td></tr>}
           </tbody>
         </table>
       </div>

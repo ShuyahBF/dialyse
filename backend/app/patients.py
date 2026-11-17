@@ -10,7 +10,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from . import db, historique, roles, validation
+from . import adhesion, db, historique, roles, validation
 from .auth import exiger_roles, journaliser, utilisateur_courant
 
 routeur = APIRouter()
@@ -35,11 +35,15 @@ CHAMPS_MEDICAUX = {"groupe_sanguin", "cause_irc", "date_debut_dialyse", "serolog
 CHAMPS_IDENTITE = {"nom", "prenom", "sexe", "date_naissance", "telephone", "adresse", "personne_a_prevenir", "prise_en_charge", "numero_assurance", "organisme_id", "taux_prise_en_charge"}
 
 
-def masquer(doc: dict, role: str) -> dict:
+def masquer(doc: dict, role: str, modeles: dict | None = None) -> dict:
     """Copie du patient sans _id ; sans champs médicaux pour un rôle qui n'y a pas droit."""
     d = {k: v for k, v in doc.items() if k not in ("_id", "nom_norm", "prenom_norm")}
     d["age"] = validation.age(d.get("date_naissance", ""))
     d["statut_libelle"] = LIBELLE_STATUT.get(d.get("statut", ""), d.get("statut", ""))
+    # Dossier d'adhésion : modèle du patient (celui choisi, sinon le modèle par défaut) ; `modeles` est lu une seule fois pour toute une liste
+    modele = adhesion.modele_de(doc, modeles if modeles is not None else adhesion.dictionnaire())
+    d["dossier_adhesion"] = adhesion.etat_dossier(d.get("pieces_admission"), modele["pieces"])
+    d["modele_adhesion"] = {"id": modele["id"], "nom": modele["nom"], "centre": modele.get("centre", ""), "pieces": modele["pieces"]}
     if not roles.voit_medical(role):
         for k in CHAMPS_MEDICAUX:
             d.pop(k, None)
@@ -135,11 +139,11 @@ def listes(u: dict = Depends(utilisateur_courant)):
     """Listes finies de l'application (listes déroulantes de l'interface)."""
     return {"sexes": SEXES, "groupes": GROUPES, "statuts": [{"valeur": s, "libelle": LIBELLE_STATUT[s]} for s in STATUTS], "causes": CAUSES,
             "serologies": SEROLOGIES, "prises_en_charge": PRISES_EN_CHARGE, "types_acces": TYPES_ACCES, "anticoagulations": ANTICOAGULATIONS,
-            "jours": JOURS, "creneaux": CRENEAUX}
+            "jours": JOURS, "creneaux": CRENEAUX, "etats_piece": adhesion.ETATS_PIECE}
 
 
 @routeur.get("/patients")
-def lister(q: str = "", statut: str = "", u: dict = Depends(exiger_roles(roles.LECTURE_PATIENT))):
+def lister(q: str = "", statut: str = "", dossier: str = "", u: dict = Depends(exiger_roles(roles.LECTURE_PATIENT))):
     """Liste des patients (recherche sur nom, prénom, code, téléphone ; filtre par statut). Résumé seulement ; le dossier complet s'ouvre un par un."""
     filtre: dict = {}
     if statut:
@@ -149,10 +153,13 @@ def lister(q: str = "", statut: str = "", u: dict = Depends(exiger_roles(roles.L
         filtre["$or"] = [{"nom_norm": {"$regex": n}}, {"prenom_norm": {"$regex": n}}, {"code": {"$regex": q.strip().upper()}},
                          {"telephone": {"$regex": q.strip()}}]
     lignes = []
+    modeles = adhesion.dictionnaire()
     for p in db.base().patients.find(filtre).sort([("nom_norm", 1), ("prenom_norm", 1)]).limit(2000):
-        m = masquer(p, u["role"])
+        m = masquer(p, u["role"], modeles)
+        if dossier == "incomplet" and m["dossier_adhesion"]["complet"]:
+            continue
         serologie_positive = roles.voit_medical(u["role"]) and any(v == "positif" for v in (p.get("serologies") or {}).values())
-        lignes.append({k: m.get(k) for k in ("id", "code", "nom", "prenom", "sexe", "age", "telephone", "statut", "statut_libelle", "prise_en_charge")}
+        lignes.append({k: m.get(k) for k in ("id", "code", "nom", "prenom", "sexe", "age", "telephone", "statut", "statut_libelle", "prise_en_charge", "dossier_adhesion")} | {"modele_adhesion": m["modele_adhesion"]["nom"]}
                       | ({"serologie_positive": serologie_positive, "poids_sec": m.get("poids_sec")} if roles.voit_medical(u["role"]) else {}))
     return lignes
 
@@ -214,6 +221,39 @@ def modifier(id_: str, corps: dict, u: dict = Depends(exiger_roles(roles.ECRITUR
         db.base().patients.update_one({"id": id_}, {"$set": maj})
         historique.noter("patients", id_, u, changes)
         journaliser("patient_modifie", u, f"{p['code']} : {', '.join(sorted(changes))}")
+    return masquer(db.base().patients.find_one({"id": id_}), u["role"])
+
+
+@routeur.put("/patients/{id_}/pieces")
+def maj_pieces(id_: str, corps: dict, u: dict = Depends(exiger_roles(roles.ECRITURE_IDENTITE))):
+    """Met à jour la RÉCEPTION des pièces du dossier d'adhésion (pièces du MODÈLE du patient) : {cle: {statut, date, note}}. Jamais le contenu des pièces."""
+    p = _patient(id_)
+    modele = adhesion.modele_de(p, adhesion.dictionnaire())
+    connues = {x["cle"]: x for x in modele["pieces"]}
+    pieces = dict(p.get("pieces_admission") or {})
+    for cle, v in (corps or {}).items():
+        if cle not in connues or not isinstance(v, dict):
+            raise HTTPException(422, f"Pièce inconnue pour ce modèle : {cle}")
+        statut = validation.choix(v, "statut", "État de la pièce", adhesion.ETATS_PIECE, obligatoire=True)
+        if statut == "sans_objet" and connues[cle]["obligatoire"]:
+            raise HTTPException(422, "Une pièce obligatoire ne peut pas être « sans objet »")
+        pieces[cle] = {"statut": statut, "date": validation.date_iso(v, "date", "Date de réception", False, futur_ok=False) if statut == "recue" else "",
+                       "note": validation.texte(v, "note", "Remarque", False, 200), "par": u["login"]}
+    db.base().patients.update_one({"id": id_}, {"$set": {"pieces_admission": pieces, "updated_at": db.maintenant(), "maj_par": u["login"]}})
+    historique.noter("patients", id_, u, ["pieces_admission"])
+    journaliser("pieces_adhesion_modifiees", u, p["code"])
+    return masquer(db.base().patients.find_one({"id": id_}), u["role"])
+
+
+@routeur.put("/patients/{id_}/modele-adhesion")
+def changer_modele(id_: str, corps: dict, u: dict = Depends(exiger_roles(roles.ECRITURE_IDENTITE))):
+    """Rattache le patient à un autre modèle de dossier d'adhésion (variante d'un centre). Les pièces déjà reçues et de même clé sont conservées."""
+    p = _patient(id_)
+    if not any(m["id"] == corps.get("modele_id") for m in adhesion.tous()):
+        raise HTTPException(422, "Modèle inconnu")
+    db.base().patients.update_one({"id": id_}, {"$set": {"modele_adhesion_id": corps["modele_id"], "updated_at": db.maintenant(), "maj_par": u["login"]}})
+    historique.noter("patients", id_, u, ["modele_adhesion"])
+    journaliser("modele_adhesion_patient", u, p["code"])
     return masquer(db.base().patients.find_one({"id": id_}), u["role"])
 
 
