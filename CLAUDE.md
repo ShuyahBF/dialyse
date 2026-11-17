@@ -57,6 +57,11 @@ Rappel des principales :
   notifications par tâche planifiée toutes les 15 min (`Alertes.kt`, jeton chiffré par le coffre Android, texte neutre sur l'écran verrouillé, l'existant est mémorisé sans notifier à l'activation). Pont `window.DialyseAndroid` (`frontend/src/lib/pontAndroid.js`).
   Build : `cd android && gradle :app:assembleRelease -PsignerAvecCleLocale=true` ; livraison : APK `dialyse-X.Y.apk` envoyé au propriétaire et déposé dans ShuyahStore.
 
+- **Dossier d'adhésion (lot 12, 17/11/2026)** : `backend/app/adhesion.py` — MODÈLE de demande = liste des pièces à fournir pour entrer dans la file active d'un centre (modèle par défaut : pièce d'identité CNIB / passeport, bulletin de référence, bilans biologiques récents,
+  sérologies hépatites B et C et VIH, échographie rénale, certificat d'indigence facultatif). Chaque centre peut avoir une VARIANTE ou son modèle propre (administration : écran « Modèles de dossier d'adhésion », création, duplication, modification, modèle par défaut) ;
+  chaque patient est rattaché à un modèle (défaut sinon). On note seulement la RÉCEPTION de chaque pièce (reçue / manquante / sans objet pour une pièce facultative), jamais son contenu : le secrétariat tient la liste sans voir de donnée médicale.
+  Les clés de pièces sont stables (renommer ne perd pas l'état) ; un modèle utilisé ou par défaut ne se supprime pas ; dossier complet = toutes les pièces OBLIGATOIRES reçues ; filtre « dossiers incomplets » dans la liste des patients.
+
 ## Charte graphique (lot 8, 17/11/2026 : « applique les styles, typographies et présentations de ZandGo »)
 - Reprise de ZandGo : couleurs `encre` #0A1E3D (barre latérale, bandeaux), `emeraude` #03316E (actions), `citron` #FF7A0A (élément actif, accent), `brume` #F3F5F9 (fond), `ardoise` #56627A ; Montserrat partout, Playfair Display italique
   (`font-editorial`) pour les titres de bandeau ; thème CLAIR imposé ; barre latérale de 230 px, boutons en pilule, champs bleu clair arrondis, cartes `rounded-2xl ring-1 ring-encre/5`, connexion sur fond bleu nuit.

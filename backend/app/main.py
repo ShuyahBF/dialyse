@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import auth, db, lot, roles, securite
 from .acces import routeur as routeur_acces
+from .adhesion import routeur as routeur_adhesion
 from .anonyme import routeur as routeur_anonyme
 from .passkeys import routeur as routeur_passkeys
 from .config import env
@@ -42,7 +43,7 @@ app = FastAPI(title="Dialyse", version=lot.VERSION, lifespan=cycle_de_vie)
 # CORS : seul le site web de la clinique (FRONTEND_ORIGIN) peut appeler l'API depuis un navigateur.
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in env("FRONTEND_ORIGIN").split(",") if o.strip()],
                    allow_methods=["*"], allow_headers=["*"])
-for _r in (routeur_utilisateurs, routeur_acces, routeur_anonyme, routeur_passkeys, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_sauvegardes, routeur_tableau, routeur_historique):
+for _r in (routeur_utilisateurs, routeur_acces, routeur_adhesion, routeur_anonyme, routeur_passkeys, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_sauvegardes, routeur_tableau, routeur_historique):
     app.include_router(_r)
 
 
