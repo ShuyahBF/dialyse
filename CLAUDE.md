@@ -50,7 +50,12 @@ Rappel des principales :
   WhatsApp passe par la **Transmission WA universelle « Liluvine Standard » de SAWALI** (lot 9, comme toutes les plateformes du propriétaire : jamais de jeton Meta propre) : protocole signé HMAC dans
   `backend/app/whatsapp.py` (un nouvel essai sur 5xx, jamais sur 4xx, 409 = STOP, texte jamais journalisé). Variables Render : `LILUVINE_WA_URL`, `LILUVINE_WA_EMETTEUR` (« dialyse »), `LILUVINE_WA_HMAC` (SECRET : clé de l'émetteur « dialyse » créé dans SAWALI), `FRONTEND_ORIGIN`.
   Sans la clé, les boutons WhatsApp sont masqués.
-- Prochains lots : application Android (DG et médecins, dossiers anonymisés).
+- **Suivi anonymisé et application Android (lot 11, 17/11/2026)** : `backend/app/anonyme.py` (route `/anonyme`, rôles direction, médecin, administration) ; le serveur ne renvoie JAMAIS nom, prénom, téléphone ni adresse :
+  code patient, âge, sexe, statut, alertes. Alertes suivies : valeurs de bilan critiques, alertes de séance (hypotension…), incidents, ruptures de stock, bilans en retard ; identifiants STABLES (une notification par alerte).
+  Notifications du téléphone : JETON DE LECTURE (`/anonyme/jeton`, empreinte SHA-256 seule gardée, 5 téléphones au plus, annulé à la désactivation du compte ou au changement de rôle) qui n'ouvre QUE `/anonyme/flux`.
+  Application Android `android/` (paquet `com.shuyah.dialyse`, hybride comme auRor) : le site dans une fenêtre intégrée, verrou par empreinte OBLIGATOIRE (refus d'ouverture sans verrouillage d'écran), captures d'écran interdites (FLAG_SECURE),
+  notifications par tâche planifiée toutes les 15 min (`Alertes.kt`, jeton chiffré par le coffre Android, texte neutre sur l'écran verrouillé, l'existant est mémorisé sans notifier à l'activation). Pont `window.DialyseAndroid` (`frontend/src/lib/pontAndroid.js`).
+  Build : `cd android && gradle :app:assembleRelease -PsignerAvecCleLocale=true` ; livraison : APK `dialyse-X.Y.apk` envoyé au propriétaire et déposé dans ShuyahStore.
 
 ## Charte graphique (lot 8, 17/11/2026 : « applique les styles, typographies et présentations de ZandGo »)
 - Reprise de ZandGo : couleurs `encre` #0A1E3D (barre latérale, bandeaux), `emeraude` #03316E (actions), `citron` #FF7A0A (élément actif, accent), `brume` #F3F5F9 (fond), `ardoise` #56627A ; Montserrat partout, Playfair Display italique

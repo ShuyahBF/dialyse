@@ -1,6 +1,6 @@
 // Cadre du portail (présentation ZandGo) : barre latérale bleu nuit de 230 px (logo, menus à pictogrammes, élément actif en orange,
 // nom + rôle en pastille, déconnexion, version), menu replié derrière un bouton « Menu » sur téléphone. Majuscule à chaque mot (règle 18).
-import { BarChart3, CalendarDays, ClipboardList, DatabaseBackup, LayoutDashboard, LogOut, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, DatabaseBackup, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useApp } from "../lib/contexte.jsx";
@@ -12,6 +12,7 @@ import ProtectionEcran from "./ProtectionEcran.jsx";
 // Chaque entrée : chemin, libellé, pictogramme, rôles autorisés (liste vide = tous).
 const MENU = [
   { chemin: "/", libelle: "tableau de bord", icone: LayoutDashboard, roles: ["super_admin", "admin", "direction", "medecin", "infirmier"] },
+  { chemin: "/suivi", libelle: "suivi anonymisé", icone: ShieldAlert, roles: ["super_admin", "admin", "direction", "medecin"] },
   { chemin: "/rapports", libelle: "rapports", icone: BarChart3, roles: ["super_admin", "admin", "direction", "medecin", "infirmier"] },
   { chemin: "/planning", libelle: "planning des séances", icone: CalendarDays, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/patients", libelle: "patients", icone: Users, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
