@@ -19,6 +19,7 @@ from .historique import routeur as routeur_historique
 from .patients import routeur as routeur_patients
 from .postes import routeur as routeur_postes
 from .rapports import routeur as routeur_rapports
+from .sauvegardes import routeur as routeur_sauvegardes
 from .seances import routeur as routeur_seances
 from .stock import routeur as routeur_stock
 from .tableau import routeur as routeur_tableau
@@ -38,7 +39,7 @@ app = FastAPI(title="Dialyse", version=lot.VERSION, lifespan=cycle_de_vie)
 # CORS : seul le site web de la clinique (FRONTEND_ORIGIN) peut appeler l'API depuis un navigateur.
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in env("FRONTEND_ORIGIN").split(",") if o.strip()],
                    allow_methods=["*"], allow_headers=["*"])
-for _r in (routeur_utilisateurs, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_tableau, routeur_historique):
+for _r in (routeur_utilisateurs, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_sauvegardes, routeur_tableau, routeur_historique):
     app.include_router(_r)
 
 
@@ -101,9 +102,22 @@ def presence_sawali() -> None:
         time.sleep(300)
 
 
+def taches_de_fond() -> None:
+    """Sauvegarde chiffrée quotidienne (dès 02h00 UTC), vérifiée toutes les 10 minutes. Une panne n'arrête jamais la boucle."""
+    from .sauvegardes import sauvegarde_automatique
+    while True:
+        try:
+            sauvegarde_automatique()
+        except Exception as e:
+            print("Sauvegarde automatique en échec :", e)
+        time.sleep(600)
+
+
 def demarrage() -> None:
     if env("PRESENCE_SAWALI", "1") != "0":
         threading.Thread(target=presence_sawali, daemon=True).start()
+    if env("TACHES_DE_FOND", "1") != "0":
+        threading.Thread(target=taches_de_fond, daemon=True).start()
     try:
         amorcer_super_admin()
     except Exception as e:                         # base injoignable au démarrage : l'API répondra « base injoignable »

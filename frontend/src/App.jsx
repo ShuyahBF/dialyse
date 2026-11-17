@@ -11,6 +11,7 @@ import Patients from "./pages/Patients.jsx";
 import Planning from "./pages/Planning.jsx";
 import Postes from "./pages/Postes.jsx";
 import Rapports from "./pages/Rapports.jsx";
+import Sauvegardes from "./pages/Sauvegardes.jsx";
 import Stock from "./pages/Stock.jsx";
 import Tableau from "./pages/Tableau.jsx";
 import Utilisateurs from "./pages/Utilisateurs.jsx";
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="postes" element={<Postes />} />
             <Route path="facturation" element={<Facturation />} />
             <Route path="rapports" element={<Rapports />} />
+            <Route path="sauvegardes" element={<Sauvegardes />} />
             <Route path="stock" element={<Stock />} />
             <Route path="utilisateurs" element={<Utilisateurs />} />
             <Route path="journal" element={<Journal />} />

@@ -40,3 +40,23 @@ export async function chargerPdf(chemin) {
   if (!r.ok) throw new Error("Document indisponible (erreur " + r.status + ")");
   return URL.createObjectURL(await r.blob());
 }
+
+/** Envoie un fichier brut (octets) à l'API et renvoie la réponse JSON (import d'une sauvegarde). */
+export async function envoyerBinaire(chemin, octets) {
+  let r;
+  try { r = await fetch(BASE + chemin, { method: "POST", headers: { Authorization: "Bearer " + jeton.lire(), "Content-Type": "application/octet-stream" }, body: octets }); } catch { throw new Error("Serveur injoignable : vérifiez la connexion Internet"); }
+  let d = null;
+  try { d = await r.json(); } catch { /* corps vide */ }
+  if (!r.ok) throw new Error(typeof d?.detail === "string" ? d.detail : "Erreur " + r.status);
+  return d;
+}
+
+/** Récupère un fichier protégé et le fait enregistrer par le navigateur (sauvegarde chiffrée : copie hors serveur). */
+export async function enregistrerFichier(chemin, nom) {
+  const r = await fetch(BASE + chemin, { headers: { Authorization: "Bearer " + jeton.lire() } });
+  if (!r.ok) throw new Error("Fichier indisponible (erreur " + r.status + ")");
+  const url = URL.createObjectURL(await r.blob());
+  const a = document.createElement("a");
+  a.href = url; a.download = nom; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
