@@ -25,6 +25,16 @@ services:
       # sans elle, aucune sauvegarde ne peut être relue ni restaurée.
       - key: SAUVEGARDE_CLE
         sync: false
+      # WhatsApp (connexion par code, second facteur, « mot de passe oublié ») : API WhatsApp Cloud de Meta, valeurs saisies PAR VOUS.
+      # Sans elles, les boutons WhatsApp sont masqués dans le site.
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_OTP_TEMPLATE
+        sync: false
+      - key: WHATSAPP_RESET_TEMPLATE
+        sync: false
       # Adresse du site web ci-dessous (autorise ses appels à l'API), ex. https://dialyse-web.onrender.com
       - key: FRONTEND_ORIGIN
         sync: false
