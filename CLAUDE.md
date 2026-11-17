@@ -47,7 +47,9 @@ Rappel des principales :
   empreinte d'appareil Android (secret par appareil, `/compte/biometrie/*`, `/auth/biometrie`) ; code WhatsApp = connexion, second facteur facultatif, vérification du numéro et lien « mot de passe oublié » (`acces.py`).
   Sécurité : réponses identiques que le compte existe ou non, codes hachés (HMAC), 5 essais par code, 5 demandes par heure et par compte (compteur à part : `envois_acces`), blocage du compte comme pour le mot de passe,
   clés d'accès et empreintes ANNULÉES après une réinitialisation du mot de passe ; clé d'accès ou empreinte = authentification forte (pas de second code) ; messages WhatsApp en fil séparé (jamais dans la requête), sans aucune donnée de patient.
-  Variables Render : `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_OTP_TEMPLATE`, `WHATSAPP_RESET_TEMPLATE`, `FRONTEND_ORIGIN`. Sans elles, les boutons WhatsApp sont masqués.
+  WhatsApp passe par la **Transmission WA universelle « Liluvine Standard » de SAWALI** (lot 9, comme toutes les plateformes du propriétaire : jamais de jeton Meta propre) : protocole signé HMAC dans
+  `backend/app/whatsapp.py` (un nouvel essai sur 5xx, jamais sur 4xx, 409 = STOP, texte jamais journalisé). Variables Render : `LILUVINE_WA_URL`, `LILUVINE_WA_EMETTEUR` (« dialyse »), `LILUVINE_WA_HMAC` (SECRET : clé de l'émetteur « dialyse » créé dans SAWALI), `FRONTEND_ORIGIN`.
+  Sans la clé, les boutons WhatsApp sont masqués.
 - Prochains lots : application Android (DG et médecins, dossiers anonymisés).
 
 ## Charte graphique (lot 8, 17/11/2026 : « applique les styles, typographies et présentations de ZandGo »)

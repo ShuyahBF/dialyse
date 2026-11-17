@@ -25,15 +25,13 @@ services:
       # sans elle, aucune sauvegarde ne peut être relue ni restaurée.
       - key: SAUVEGARDE_CLE
         sync: false
-      # WhatsApp (connexion par code, second facteur, « mot de passe oublié ») : API WhatsApp Cloud de Meta, valeurs saisies PAR VOUS.
-      # Sans elles, les boutons WhatsApp sont masqués dans le site.
-      - key: WHATSAPP_ACCESS_TOKEN
-        sync: false
-      - key: WHATSAPP_PHONE_NUMBER_ID
-        sync: false
-      - key: WHATSAPP_OTP_TEMPLATE
-        sync: false
-      - key: WHATSAPP_RESET_TEMPLATE
+      # WhatsApp par « Liluvine Standard » de SAWALI (Transmission universelle) : connexion par code, second facteur, « mot de passe oublié ».
+      # La clé HMAC est celle de l'émetteur « dialyse » créé dans SAWALI : SECRET saisi PAR VOUS. Sans elle, les boutons WhatsApp sont masqués.
+      - key: LILUVINE_WA_URL
+        value: https://api.sawalismartsystems.com/api/webhook/liluvine-send
+      - key: LILUVINE_WA_EMETTEUR
+        value: dialyse
+      - key: LILUVINE_WA_HMAC
         sync: false
       # Adresse du site web ci-dessous (autorise ses appels à l'API), ex. https://dialyse-web.onrender.com
       - key: FRONTEND_ORIGIN
