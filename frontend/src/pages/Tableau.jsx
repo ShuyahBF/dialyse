@@ -1,5 +1,5 @@
 // Tableau de bord : séances du jour par statut, occupation des postes, patients, incidents, séances sur 6 mois. Bouton « Actualiser » (règle 17).
-import { Activity, AlertTriangle, CalendarCheck, Monitor, RefreshCw, Users } from "lucide-react";
+import { Activity, AlertTriangle, CalendarCheck, FlaskConical, Monitor, RefreshCw, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Bouton from "../composants/Bouton.jsx";
 import { api } from "../lib/api.js";
@@ -23,7 +23,9 @@ function Carte({ icone: Icone, titre, valeur, sous, couleur }) {
 export default function Tableau() {
   const { avecToast, toast } = useApp();
   const [t, setT] = useState(null);
-  const charger = useCallback(() => api("/tableau").then(setT), []);
+  const [suivi, setSuivi] = useState(null);
+  // Deux lectures indépendantes lancées en parallèle (règle 7) : indicateurs et suivi des bilans.
+  const charger = useCallback(async () => { const [x, s] = await Promise.all([api("/tableau"), api("/bilans/suivi")]); setT(x); setSuivi(s); }, []);
   useEffect(() => { charger().catch((e) => toast(e.message, "erreur")); }, [charger, toast]);
   const actualiser = () => avecToast("Actualisation du tableau de bord", charger, () => "Tableau de bord actualisé");
   if (!t) return <div className="p-8 flex justify-center"><span className="jauge" /></div>;
@@ -68,6 +70,22 @@ export default function Tableau() {
           </div>
         </section>
       </div>
+      {suivi && (
+        <div className="grid lg:grid-cols-2 gap-4 mt-4">
+          <section className="rounded-2xl bg-white p-4 shadow-sm border border-rose-200">
+            <h2 className="font-semibold mb-3 flex items-center gap-2 text-rose-800"><AlertTriangle size={18} /> Valeurs biologiques critiques ({suivi.critiques.length})</h2>
+            {!suivi.critiques.length ? <p className="text-sm text-slate-500">Aucune valeur critique dans les derniers bilans.</p> : (
+              <ul className="space-y-2 text-sm">{suivi.critiques.map((c) => <li key={c.id}><b>{c.nom} {c.prenom}</b> <span className="text-slate-500">({dateFr(c.date)})</span><div className="text-rose-700">{c.messages.join(" · ")}</div></li>)}</ul>
+            )}
+          </section>
+          <section className="rounded-2xl bg-white p-4 shadow-sm border border-orange-200">
+            <h2 className="font-semibold mb-3 flex items-center gap-2 text-orange-800"><FlaskConical size={18} /> Bilans en retard ({suivi.en_retard.length})</h2>
+            {!suivi.en_retard.length ? <p className="text-sm text-slate-500">Tous les patients ont un bilan de moins de {suivi.jours_limite} jours.</p> : (
+              <ul className="space-y-1 text-sm">{suivi.en_retard.map((p) => <li key={p.id}><b>{p.nom} {p.prenom}</b> <span className="text-slate-500">— {p.dernier_bilan ? "dernier bilan le " + dateFr(p.dernier_bilan) : "aucun bilan"}</span></li>)}</ul>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

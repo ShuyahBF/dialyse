@@ -2,6 +2,7 @@
 // Identité · Médical · Prescription · Accès vasculaires · Séances. Les onglets médicaux n'existent pas pour le secrétariat.
 import { AlertTriangle, FolderOpen, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Bilans from "../composants/Bilans.jsx";
 import Bouton, { BoutonIcone } from "../composants/Bouton.jsx";
 import { Case, Liste, Pastille, Texte } from "../composants/Champs.jsx";
 import Modal from "../composants/Modal.jsx";
@@ -191,7 +192,7 @@ function Dossier({ id, onFermer, onChange }) {
   const peutIdentite = ["secretariat", "medecin", "infirmier", "admin", "super_admin"].includes(utilisateur.role);
   const peutMedical = ["medecin", "infirmier", "admin", "super_admin"].includes(utilisateur.role);
   const peutPrescrire = ["medecin", "admin", "super_admin"].includes(utilisateur.role);
-  const onglets = [["identite", "Identité"], ...(medical ? [["medical", "Médical"], ["prescription", "Prescription"], ["acces", "Accès vasculaires"], ["seances", "Séances"]] : [])];
+  const onglets = [["identite", "Identité"], ...(medical ? [["medical", "Médical"], ["prescription", "Prescription"], ["acces", "Accès vasculaires"], ["bilans", "Bilans"], ["seances", "Séances"]] : [])];
   return (
     <Modal titre={`${p.nom} ${p.prenom} — ${p.code}`} large onFermer={onFermer} pied={<Bouton onClick={onFermer}>Fermer</Bouton>}>
       <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -209,6 +210,7 @@ function Dossier({ id, onFermer, onChange }) {
       {onglet === "medical" && <OngletMedical p={p} listes={listes} peutEcrire={peutMedical} enregistrer={enregistrer} />}
       {onglet === "prescription" && <OngletPrescription p={p} listes={listes} peutEcrire={peutPrescrire} enregistrer={enregistrer} />}
       {onglet === "acces" && <OngletAcces p={p} listes={listes} peutEcrire={peutMedical} recharger={charger} />}
+      {onglet === "bilans" && <Bilans patient={p} peutEcrire={peutMedical} />}
       {onglet === "seances" && <OngletSeances p={p} />}
     </Modal>
   );
