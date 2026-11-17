@@ -33,7 +33,7 @@ def test_admin_cree_des_comptes_limites(client):
     # le super administrateur peut créer un admin
     hs = entete(client, "sa")
     assert client.post("/utilisateurs", json={"login": "adm2", "nom_affiche": "Adm 2", "role": "admin", "mot_de_passe": "Provisoire1"}, headers=hs).status_code == 200
-    assert [r["valeur"] for r in client.get("/roles", headers=ha).json()] == ["medecin", "infirmier", "secretariat", "technicien"]
+    assert [r["valeur"] for r in client.get("/roles", headers=ha).json()] == ["direction", "medecin", "infirmier", "secretariat", "technicien"]
 
 
 def test_gestion_des_comptes(client):

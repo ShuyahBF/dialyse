@@ -10,6 +10,7 @@ import Journal from "./pages/Journal.jsx";
 import Patients from "./pages/Patients.jsx";
 import Planning from "./pages/Planning.jsx";
 import Postes from "./pages/Postes.jsx";
+import Rapports from "./pages/Rapports.jsx";
 import Stock from "./pages/Stock.jsx";
 import Tableau from "./pages/Tableau.jsx";
 import Utilisateurs from "./pages/Utilisateurs.jsx";
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="patients" element={<Patients />} />
             <Route path="postes" element={<Postes />} />
             <Route path="facturation" element={<Facturation />} />
+            <Route path="rapports" element={<Rapports />} />
             <Route path="stock" element={<Stock />} />
             <Route path="utilisateurs" element={<Utilisateurs />} />
             <Route path="journal" element={<Journal />} />

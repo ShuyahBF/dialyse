@@ -1,5 +1,5 @@
 // Mise en page du portail : barre latérale (menus selon le rôle, majuscule à chaque mot : règle 18), en-tête, version affichée.
-import { Activity, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Monitor, Package, Receipt, ShieldCheck, UserCog, Users } from "lucide-react";
+import { Activity, BarChart3, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Monitor, Package, Receipt, ShieldCheck, UserCog, Users } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useApp } from "../lib/contexte.jsx";
 import { titreMenu } from "../lib/format.js";
@@ -8,8 +8,9 @@ import ProtectionEcran from "./ProtectionEcran.jsx";
 
 // Chaque entrée : chemin, libellé, pictogramme, rôles autorisés (liste vide = tous).
 const MENU = [
-  { chemin: "/", libelle: "tableau de bord", icone: LayoutDashboard, roles: ["super_admin", "admin", "medecin", "infirmier"] },
+  { chemin: "/", libelle: "tableau de bord", icone: LayoutDashboard, roles: ["super_admin", "admin", "direction", "medecin", "infirmier"] },
   { chemin: "/planning", libelle: "planning des séances", icone: CalendarDays, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
+  { chemin: "/rapports", libelle: "rapports", icone: BarChart3, roles: ["super_admin", "admin", "direction", "medecin", "infirmier"] },
   { chemin: "/patients", libelle: "patients", icone: Users, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/postes", libelle: "postes de dialyse", icone: Monitor, roles: [] },
   { chemin: "/stock", libelle: "consommables et stocks", icone: Package, roles: ["super_admin", "admin", "medecin", "infirmier", "technicien"] },

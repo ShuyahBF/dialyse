@@ -10,15 +10,16 @@ SUPER_ADMIN = "super_admin"       # propriétaire de la plateforme : tout, y com
 ADMIN = "admin"                   # administrateur de la clinique : comptes, postes, paramètres, journal
 MEDECIN = "medecin"               # néphrologue : prescription, validation des séances
 INFIRMIER = "infirmier"           # soins : planning, déroulement des séances
+DIRECTION = "direction"           # directeur général : rapports et indicateurs AGRÉGÉS, jamais l'identité des patients
 SECRETARIAT = "secretariat"       # accueil : identité des patients, planning (pas de données médicales)
 TECHNICIEN = "technicien"         # biomédical : postes et machines uniquement
 
-TOUS_LES_ROLES = [SUPER_ADMIN, ADMIN, MEDECIN, INFIRMIER, SECRETARIAT, TECHNICIEN]
-LIBELLES = {SUPER_ADMIN: "Super administrateur", ADMIN: "Administrateur", MEDECIN: "Médecin néphrologue",
+TOUS_LES_ROLES = [SUPER_ADMIN, ADMIN, DIRECTION, MEDECIN, INFIRMIER, SECRETARIAT, TECHNICIEN]
+LIBELLES = {SUPER_ADMIN: "Super administrateur", ADMIN: "Administrateur", DIRECTION: "Directeur général", MEDECIN: "Médecin néphrologue",
             INFIRMIER: "Infirmier(ère)", SECRETARIAT: "Secrétariat", TECHNICIEN: "Technicien biomédical"}
 
 # Rôles qu'un ADMIN peut créer ou modifier (jamais un autre admin ni un super admin).
-ROLES_GERES_PAR_ADMIN = {MEDECIN, INFIRMIER, SECRETARIAT, TECHNICIEN}
+ROLES_GERES_PAR_ADMIN = {DIRECTION, MEDECIN, INFIRMIER, SECRETARIAT, TECHNICIEN}
 
 ADMINISTRATION = {ADMIN, SUPER_ADMIN}
 SOIGNANTS = {MEDECIN, INFIRMIER}
@@ -43,6 +44,8 @@ ECRITURE_POSTE = {TECHNICIEN, ADMIN, SUPER_ADMIN}
 LECTURE_POSTE = set(TOUS_LES_ROLES)
 # Statistiques : encadrement et soignants.
 LECTURE_STATS = {MEDECIN, INFIRMIER, ADMIN, SUPER_ADMIN}
+# Rapports et tableau de bord AGRÉGÉS (aucun nom de patient) : les statistiques + la direction.
+LECTURE_RAPPORTS = LECTURE_STATS | {DIRECTION}
 LECTURE_JOURNAL = ADMINISTRATION
 # Consommables et stocks : lecture par les équipes de soins et la technique ; écriture (entrées, sorties, ajustements) par les infirmiers, la technique et l'administration.
 LECTURE_STOCK = {MEDECIN, INFIRMIER, TECHNICIEN, ADMIN, SUPER_ADMIN}

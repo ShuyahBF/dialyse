@@ -13,7 +13,7 @@ routeur = APIRouter()
 
 
 @routeur.get("/tableau")
-def tableau(u: dict = Depends(exiger_roles(roles.LECTURE_STATS))):
+def tableau(u: dict = Depends(exiger_roles(roles.LECTURE_RAPPORTS))):
     """Indicateurs : séances du jour par statut, occupation, patients par statut, incidents et séances sur 6 mois."""
     b = db.base()
     auj = date.today()

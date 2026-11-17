@@ -18,6 +18,7 @@ from .facturation import routeur as routeur_facturation
 from .historique import routeur as routeur_historique
 from .patients import routeur as routeur_patients
 from .postes import routeur as routeur_postes
+from .rapports import routeur as routeur_rapports
 from .seances import routeur as routeur_seances
 from .stock import routeur as routeur_stock
 from .tableau import routeur as routeur_tableau
@@ -37,7 +38,7 @@ app = FastAPI(title="Dialyse", version=lot.VERSION, lifespan=cycle_de_vie)
 # CORS : seul le site web de la clinique (FRONTEND_ORIGIN) peut appeler l'API depuis un navigateur.
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in env("FRONTEND_ORIGIN").split(",") if o.strip()],
                    allow_methods=["*"], allow_headers=["*"])
-for _r in (routeur_utilisateurs, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_tableau, routeur_historique):
+for _r in (routeur_utilisateurs, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_tableau, routeur_historique):
     app.include_router(_r)
 
 

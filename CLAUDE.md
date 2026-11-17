@@ -37,7 +37,9 @@ Rappel des principales :
   taux du patient > taux de l'organisme > 0 % ; paiements partiels du patient ou de l'organisme, jamais au-delà du reste dû ; une facture ne se supprime pas : elle s'ANNULE (administration, motif, aucun paiement) ;
   PDF `reportlab` servi en `inline` et affiché dans le lecteur interne (`PdfInterne`, seules actions « Imprimer » et « Fermer », aucun téléchargement) ; aucune donnée médicale sur une facture ;
   tarifs, organismes et en-tête : administration ; caisse : secrétariat et administration (le médecin n'y a pas accès).
-- Prochains lots : rapports (jour, semaine, mois, période, genre, tranches d'âge), sauvegardes chiffrées, biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
+- **Rapports (lot 5)** : AGRÉGÉS, jamais de nom ni de code patient (test `test_droits_direction_anonymat_et_journal`) ; calculs purs dans `backend/app/rapports.py` ; âge calculé à la date de chaque séance ; période libre de 366 jours au plus ;
+  consultation journalisée ; PDF `inline` dans le lecteur interne. Rôle **Directeur général** (`direction`) : rapports et tableau de bord agrégés seulement (le serveur lui refuse patients, séances, bilans, stock, factures, comptes, journal).
+- Prochains lots : sauvegardes chiffrées, biométrie et OTP WhatsApp, puis application Android (DG et médecins, dossiers anonymisés).
 
 ## Tests avant toute livraison
 - `cd backend && python -m pytest tests -q` (base en mémoire `mongomock`).
