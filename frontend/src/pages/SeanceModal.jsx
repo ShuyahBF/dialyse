@@ -111,6 +111,12 @@ export default function SeanceModal({ id, onFermer, onChange }) {
       {soignant && (s.incidents || []).length > 0 && (
         <ul className="mb-3 space-y-1.5">{s.incidents.map((i) => <li key={i.id} className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm"><b>{i.heure} — {i.type}</b>{i.description && ` : ${i.description}`}{i.conduite && <div className="text-slate-600">Conduite : {i.conduite}</div>}</li>)}</ul>
       )}
+      {soignant && (s.consommables || []).length > 0 && (
+        <p className="text-sm text-slate-600 mb-2">Consommables : {s.consommables.map((c) => `${c.nom} × ${nb(c.quantite)} (lot ${c.lots.map((l) => l.numero).join(", ")})`).join(" · ")}</p>
+      )}
+      {soignant && (s.manques || []).length > 0 && (
+        <p className="mb-1.5 flex items-center gap-2 rounded-lg bg-orange-100 text-orange-900 px-3 py-2 text-sm"><AlertTriangle size={16} /> Stock insuffisant, non décompté : {s.manques.join(", ")}</p>
+      )}
       {soignant && s.post && <Constantes titre="Fin de séance" c={s.post} />}
       {soignant && s.observations && <p className="text-sm mb-2">Observations : {s.observations}</p>}
       {s.avis_medecin && <p className="text-sm mb-2">Avis du médecin : {s.avis_medecin}</p>}

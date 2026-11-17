@@ -1,5 +1,5 @@
 // Tableau de bord : séances du jour par statut, occupation des postes, patients, incidents, séances sur 6 mois. Bouton « Actualiser » (règle 17).
-import { Activity, AlertTriangle, CalendarCheck, FlaskConical, Monitor, RefreshCw, Users } from "lucide-react";
+import { Activity, AlertTriangle, CalendarCheck, FlaskConical, Monitor, Package, RefreshCw, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Bouton from "../composants/Bouton.jsx";
 import { api } from "../lib/api.js";
@@ -24,8 +24,9 @@ export default function Tableau() {
   const { avecToast, toast } = useApp();
   const [t, setT] = useState(null);
   const [suivi, setSuivi] = useState(null);
+  const [stock, setStock] = useState(null);
   // Deux lectures indépendantes lancées en parallèle (règle 7) : indicateurs et suivi des bilans.
-  const charger = useCallback(async () => { const [x, s] = await Promise.all([api("/tableau"), api("/bilans/suivi")]); setT(x); setSuivi(s); }, []);
+  const charger = useCallback(async () => { const [x, s, st] = await Promise.all([api("/tableau"), api("/bilans/suivi"), api("/stock/alertes").catch(() => null)]); setT(x); setSuivi(s); setStock(st); }, []);
   useEffect(() => { charger().catch((e) => toast(e.message, "erreur")); }, [charger, toast]);
   const actualiser = () => avecToast("Actualisation du tableau de bord", charger, () => "Tableau de bord actualisé");
   if (!t) return <div className="p-8 flex justify-center"><span className="jauge" /></div>;
@@ -70,6 +71,17 @@ export default function Tableau() {
           </div>
         </section>
       </div>
+      {stock && (stock.ruptures.length + stock.bas.length + stock.perimes.length + stock.bientot_perimes.length > 0) && (
+        <section className="rounded-2xl bg-white p-4 shadow-sm border border-orange-200 mt-4">
+          <h2 className="font-semibold mb-2 flex items-center gap-2 text-orange-800"><Package size={18} /> Alertes de stock</h2>
+          <ul className="text-sm space-y-1">
+            {stock.ruptures.map((a) => <li key={a.id} className="text-rose-700">Rupture : <b>{a.nom}</b></li>)}
+            {stock.perimes.map((l) => <li key={l.lot + l.article_id} className="text-rose-700">Lot périmé : <b>{l.article}</b> — lot {l.lot} ({dateFr(l.peremption)})</li>)}
+            {stock.bas.map((a) => <li key={a.id} className="text-orange-700">Stock bas : <b>{a.nom}</b> ({a.stock} / seuil {a.seuil})</li>)}
+            {stock.bientot_perimes.map((l) => <li key={l.lot + l.article_id} className="text-orange-700">Péremption proche : <b>{l.article}</b> — lot {l.lot} ({dateFr(l.peremption)})</li>)}
+          </ul>
+        </section>
+      )}
       {suivi && (
         <div className="grid lg:grid-cols-2 gap-4 mt-4">
           <section className="rounded-2xl bg-white p-4 shadow-sm border border-rose-200">
