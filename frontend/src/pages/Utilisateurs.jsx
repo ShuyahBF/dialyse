@@ -46,7 +46,7 @@ export default function Utilisateurs() {
         </div>
       </div>
       <BandeauVersion detaille className="mb-3" />
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
             <ThTri cle="login" tri={tri}>Identifiant</ThTri><ThTri cle="nom_affiche" tri={tri}>Nom</ThTri><ThTri cle="role_libelle" tri={tri}>Rôle</ThTri>
@@ -55,7 +55,7 @@ export default function Utilisateurs() {
           <tbody>
             {affichees.map((c) => (
               <tr key={c.id} onClick={() => setSelection(c.id)} className={selection === c.id ? "ligne-selectionnee" : ""}>
-                <td className="font-medium text-sky-800">{c.login}</td><td>{c.nom_affiche}</td><td>{c.role_libelle}</td>
+                <td className="font-medium text-emeraude">{c.login}</td><td>{c.nom_affiche}</td><td>{c.role_libelle}</td>
                 <td>{c.actif ? <Pastille couleur="vert" icone={UserCheck}>Actif</Pastille> : <Pastille couleur="rouge" icone={UserX}>Désactivé</Pastille>}</td>
                 <td>{c.totp_actif ? <Pastille couleur="vert">Oui</Pastille> : <Pastille>Non</Pastille>}</td>
                 <td className="whitespace-nowrap">

@@ -68,13 +68,13 @@ export default function Compte() {
       <h1 className="text-2xl font-semibold mb-1">Mon Compte</h1>
       <p className="text-sm text-slate-600 mb-4">{utilisateur.nom} · {utilisateur.role_libelle}</p>
       {utilisateur.doit_changer_mdp && <p className="mb-4 rounded-lg bg-orange-100 text-orange-900 px-3 py-2 text-sm">Votre mot de passe est provisoire : veuillez le changer maintenant.</p>}
-      <section className="rounded-2xl bg-white p-4 border border-slate-200 mb-4">
+      <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10 mb-4">
         <h2 className="font-semibold mb-3 flex items-center gap-2"><KeyRound size={18} className="text-turquoise-600" /> Changer Mon Mot De Passe</h2>
         <Champ libelle="Mot de passe actuel"><ChampMotDePasse valeur={ancien} onChange={setAncien} /></Champ>
         <Champ libelle="Nouveau mot de passe" aide="8 caractères au moins, avec une lettre et un chiffre"><ChampMotDePasse valeur={nouveau} onChange={setNouveau} autoComplete="new-password" /></Champ>
         <Bouton icone={KeyRound} variante="principal" disabled={!ancien || faible} onClick={changerMdp}>Changer le mot de passe</Bouton>
       </section>
-      <section className="rounded-2xl bg-white p-4 border border-slate-200 mb-4">
+      <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10 mb-4">
         <h2 className="font-semibold mb-2 flex items-center gap-2">
           {utilisateur.totp_actif ? <ShieldCheck size={18} className="text-emerald-600" /> : <ShieldOff size={18} className="text-slate-500" />} Double Authentification
         </h2>
@@ -97,7 +97,7 @@ export default function Compte() {
         )}
       </section>
       {acces && (
-        <section className="rounded-2xl bg-white p-4 border border-slate-200 mb-4">
+        <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10 mb-4">
           <h2 className="font-semibold mb-2 flex items-center gap-2"><MessageCircle size={18} className="text-emerald-600" /> Numéro WhatsApp</h2>
           {!acces.whatsapp_disponible && <p className="text-sm text-slate-500">WhatsApp n'est pas encore activé sur le serveur (variables WHATSAPP_… à saisir dans Render).</p>}
           {acces.whatsapp_disponible && (acces.telephone_verifie ? (
@@ -123,12 +123,12 @@ export default function Compte() {
         </section>
       )}
       {acces && clesAccesDisponibles() && (
-        <section className="rounded-2xl bg-white p-4 border border-slate-200 mb-4">
+        <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10 mb-4">
           <h2 className="font-semibold mb-2 flex items-center gap-2"><Fingerprint size={18} className="text-violet-600" /> Empreinte, visage ou code de l'appareil</h2>
           <p className="text-sm text-slate-600 mb-3">Connexion sans mot de passe avec une clé d'accès enregistrée sur cet appareil (rien de secret ne quitte l'appareil).</p>
           <ul className="space-y-1.5 mb-3">
             {cles.map((c) => (
-              <li key={c.credential_id} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm">
+              <li key={c.credential_id} className="flex items-center gap-2 rounded-lg ring-1 ring-encre/10 px-3 py-1.5 text-sm">
                 <Fingerprint size={16} className="text-violet-600" /><span className="flex-1">{c.nom}<span className="block text-xs text-slate-500">{c.dernier_usage ? "utilisée le " + dateHeureFr(c.dernier_usage) : "jamais utilisée"}</span></span>
                 <Bouton petit variante="neutre" icone={Trash2} disabled={!mdpAcces} onClick={() => supprimerCle(c)}>Supprimer</Bouton>
               </li>

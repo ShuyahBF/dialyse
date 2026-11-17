@@ -1,17 +1,16 @@
 // Tableau de bord : séances du jour par statut, occupation des postes, patients, incidents, séances sur 6 mois. Bouton « Actualiser » (règle 17).
-import { Activity, AlertTriangle, CalendarCheck, FlaskConical, Monitor, Package, RefreshCw, Users } from "lucide-react";
+import { Activity, AlertTriangle, CalendarCheck, FlaskConical, Package, RefreshCw, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Bouton from "../composants/Bouton.jsx";
 import { api } from "../lib/api.js";
 import { useApp } from "../lib/contexte.jsx";
 import { dateFr } from "../lib/format.js";
 
-const COULEURS = { planifiee: "bg-sky-500", en_cours: "bg-orange-500", terminee: "bg-emerald-600", annulee: "bg-slate-400", absente: "bg-rose-500" };
 const LIBELLES = { planifiee: "Planifiées", en_cours: "En cours", terminee: "Terminées", annulee: "Annulées", absente: "Absents" };
 
 function Carte({ icone: Icone, titre, valeur, sous, couleur }) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200">
+    <div className="rounded-2xl bg-white p-4 ring-1 ring-encre/5">
       <div className={`inline-flex rounded-xl p-2 mb-2 ${couleur}`}><Icone size={20} /></div>
       <div className="text-2xl font-semibold tabular-nums">{valeur}</div>
       <div className="text-sm text-slate-600">{titre}</div>
@@ -37,31 +36,37 @@ export default function Tableau() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-        <h1 className="text-2xl font-semibold">Tableau De Bord <span className="text-base font-normal text-slate-500">— {dateFr(t.date)}</span></h1>
+        <h1 className="text-2xl font-bold">Tableau De Bord <span className="text-base font-normal text-ardoise">— {dateFr(t.date)}</span></h1>
         <Bouton icone={RefreshCw} onClick={actualiser}>Actualiser</Bouton>
       </div>
+      {/* Bandeau sombre « Le déroulé de la journée » (même présentation que « Le trajet des commandes » de ZandGo) */}
+      <section className="relative mb-5 overflow-hidden rounded-3xl bg-encre px-5 pb-6 pt-5 text-white sm:px-8">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-editorial text-2xl font-bold italic">Le déroulé de la journée</h2>
+          <p className="text-sm text-white/60">{t.seances_jour.total} séance(s) prévue(s) aujourd'hui</p>
+        </div>
+        <ol className="relative mt-6 grid grid-cols-3 gap-y-6 sm:grid-cols-5">
+          <span aria-hidden="true" className="absolute left-[10%] right-[10%] top-[22px] hidden border-t-2 border-dashed border-white/20 sm:block" />
+          {["planifiee", "en_cours", "terminee", "annulee", "absente"].map((k) => {
+            const n = t.seances_jour.par_statut[k] || 0;
+            const actif = k === "en_cours" && n > 0;
+            return (
+              <li key={k} className="relative flex flex-col items-center text-center">
+                <span className={`relative z-10 grid h-11 min-w-11 place-items-center rounded-full px-2 font-display text-lg font-extrabold tabular-nums ring-4 ring-encre ${actif ? "bg-citron text-encre" : n ? "bg-white text-encre" : "bg-encre-600 text-white/50"}`}>{n}</span>
+                <span className={`mt-2 text-sm font-semibold ${n ? "" : "text-white/50"}`}>{LIBELLES[k]}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <Carte icone={CalendarCheck} titre="Séances aujourd'hui" valeur={t.seances_jour.total} couleur="bg-sky-100 text-sky-700" />
+        <Carte icone={CalendarCheck} titre="Séances aujourd'hui" valeur={t.seances_jour.total} couleur="bg-emeraude-50 text-emeraude" />
         <Carte icone={Activity} titre="Occupation des postes" valeur={t.occupation_pct + " %"} sous={`${t.postes.en_service} poste(s) en service sur ${t.postes.total}`} couleur="bg-emerald-100 text-emerald-700" />
         <Carte icone={Users} titre="Patients en dialyse" valeur={t.patients_actifs} couleur="bg-violet-100 text-violet-700" />
         <Carte icone={AlertTriangle} titre="Incidents ce mois-ci" valeur={t.incidents_mois} couleur={t.incidents_mois ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-600"} />
       </div>
-      <div className="grid lg:grid-cols-2 gap-4">
-        <section className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200">
-          <h2 className="font-semibold mb-3 flex items-center gap-2"><Monitor size={18} className="text-turquoise-600" /> Séances du jour par état</h2>
-          {t.seances_jour.total === 0 ? <p className="text-sm text-slate-500">Aucune séance prévue aujourd'hui.</p> : (
-            <ul className="space-y-2">
-              {Object.entries(t.seances_jour.par_statut).map(([s, n]) => (
-                <li key={s} className="flex items-center gap-2 text-sm">
-                  <span className={`h-3 w-3 rounded-full ${COULEURS[s]}`} />
-                  <span className="flex-1">{LIBELLES[s] || s}</span>
-                  <span className="font-semibold tabular-nums">{n}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        <section className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200">
+      <div className="grid gap-4">
+        <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/5">
           <h2 className="font-semibold mb-3">Séances réalisées sur 6 mois</h2>
           <div className="flex items-end gap-2 h-36">
             {t.seances_par_mois.map((m) => (

@@ -140,7 +140,7 @@ export default function SeanceModal({ id, onFermer, onChange }) {
             </section>
           )}
           <section className="rounded-xl border border-sky-200 p-3">
-            <h3 className="font-semibold mb-2 flex items-center gap-2 text-sky-800"><CalendarClock size={16} /> Déplacer</h3>
+            <h3 className="font-semibold mb-2 flex items-center gap-2 text-emeraude"><CalendarClock size={16} /> Déplacer</h3>
             <div className="grid grid-cols-2 gap-x-2">
               <Texte libelle="Date" type="date" valeur={depl?.date ?? s.date} onChange={(x) => setDepl({ ...(depl || {}), date: x })} />
               <Liste libelle="Créneau" valeur={depl?.creneau ?? s.creneau} onChange={(x) => setDepl({ ...(depl || {}), creneau: x })} options={["matin", "midi", "soir"]} />
@@ -163,7 +163,7 @@ export default function SeanceModal({ id, onFermer, onChange }) {
       {s.statut === "en_cours" && soignant && (
         <div className="space-y-4 mt-3">
           <section className="rounded-xl border border-sky-200 p-3">
-            <h3 className="font-semibold mb-2 flex items-center gap-2 text-sky-800"><HeartPulse size={16} /> Relevé de surveillance</h3>
+            <h3 className="font-semibold mb-2 flex items-center gap-2 text-emeraude"><HeartPulse size={16} /> Relevé de surveillance</h3>
             <div className="grid grid-cols-2 gap-x-2">
               <Texte libelle="Heure" type="time" valeur={rel.heure} onChange={(x) => setRel({ ...rel, heure: x })} />
               <Texte libelle="Pouls" type="number" valeur={rel.pouls} onChange={(x) => setRel({ ...rel, pouls: x })} />

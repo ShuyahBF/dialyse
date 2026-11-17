@@ -2,18 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Base (charte ZandGo) : fond bleuté, Montserrat, focus clavier visible, thème clair imposé ---------- */
+@layer base {
+  :root { color-scheme: only light; }
+  html { -webkit-tap-highlight-color: transparent; background-color: #ffffff; }
+  body { @apply bg-brume font-sans text-encre antialiased; }
+  h1, h2, h3 { @apply font-display tracking-tight; }
+  :focus-visible { @apply outline-none ring-2 ring-emeraude ring-offset-2; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+}
+/* Barre latérale : défilement fin et discret sur fond bleu nuit */
+.barre-laterale { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent; }
+.barre-laterale::-webkit-scrollbar { width: 6px; }
+.barre-laterale::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 3px; }
+
 /* ---------- Tableaux (règles 3 et 19) ----------
    Survol : fond bleu clair transparent. Sélection : fond orange clair, police bleu nuit (contraste 7,7:1).
    Une ligne est sélectionnée si elle porte la classe « ligne-selectionnee » ou aria-selected="true". */
 table.tableau { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-table.tableau th { text-align: left; font-weight: 600; padding: 0.6rem 0.75rem; background: #e0f2fe; color: #0A1E3D; white-space: nowrap; }
+table.tableau th { text-align: left; font-weight: 600; font-size: 0.75rem; padding: 0.6rem 0.75rem; background: #F3F5F9; color: #56627A; white-space: nowrap; }
 table.tableau td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #e2e8f0; }
 table.tableau tbody tr:hover { background: rgba(56, 189, 248, 0.16); }
 table.tableau tbody tr.ligne-selectionnee, table.tableau tbody tr[aria-selected="true"] { background: #f6a35b; color: #0A1E3D; }
 /* Nombres toujours à droite, en-tête compris. */
 table.tableau .num { text-align: right; font-variant-numeric: tabular-nums; }
 /* En-tête de colonne triée : orange. */
-table.tableau th.trie { background: #fed7aa; }
+table.tableau th.trie { background: #fed7aa; color: #0A1E3D; }
 
 /* ---------- Protection de l'écran (données de santé) ---------- */
 .ecran-flou { filter: blur(14px); pointer-events: none; user-select: none; }
@@ -21,4 +35,4 @@ table.tableau th.trie { background: #fed7aa; }
 
 /* Jauge circulaire d'attente (règle « Attentes et chargements »). */
 @keyframes tourne { to { transform: rotate(360deg); } }
-.jauge { width: 1.25rem; height: 1.25rem; border-radius: 9999px; border: 3px solid rgba(14, 116, 144, 0.25); border-top-color: #0e7490; animation: tourne 0.8s linear infinite; }
+.jauge { width: 1.25rem; height: 1.25rem; border-radius: 9999px; border: 3px solid rgba(3, 49, 110, 0.2); border-top-color: #03316E; animation: tourne 0.8s linear infinite; }

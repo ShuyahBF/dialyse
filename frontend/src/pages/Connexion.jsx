@@ -1,10 +1,11 @@
 // Page de connexion : carte centrée, état du serveur, version, œil sur le mot de passe.
 // Moyens d'accès : mot de passe (+ code de l'application d'authentification ou de WhatsApp), code WhatsApp, clé d'accès (empreinte, visage), mot de passe oublié.
-import { Activity, Fingerprint, KeyRound, LogIn, MessageCircle, ServerCog, ServerCrash } from "lucide-react";
+import { Fingerprint, KeyRound, LogIn, MessageCircle, ServerCog, ServerCrash } from "lucide-react";
 import { useEffect, useState } from "react";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton from "../composants/Bouton.jsx";
 import ChampMotDePasse from "../composants/ChampMotDePasse.jsx";
+import Logo from "../composants/Logo.jsx";
 import { Champ, Texte } from "../composants/Champs.jsx";
 import { api, jeton } from "../lib/api.js";
 import { useApp } from "../lib/contexte.jsx";
@@ -63,13 +64,14 @@ export default function Connexion() {
   }[etat];
 
   return (
-    <div className="min-h-dvh flex items-center justify-center p-4 bg-gradient-to-br from-sky-100 via-white to-turquoise-100">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <div className="flex flex-col items-center mb-5">
-          <div className="rounded-2xl bg-turquoise-600 p-3 text-white mb-2"><Activity size={32} /></div>
-          <h1 className="text-xl font-semibold">Dialyse</h1>
-          <p className="text-sm text-slate-500">Gestion des actes de dialyse</p>
+    <div className="grid min-h-screen place-items-center bg-encre px-4 py-10">
+      <main className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+        <div className="flex flex-col items-center">
+          <Logo taille={40} />
+          <h1 className="mt-5 text-center font-editorial text-2xl font-bold italic text-encre">Gestion des actes de dialyse</h1>
+          <p className="mt-1 text-sm text-ardoise">Espace réservé au personnel de la clinique</p>
         </div>
+        <div className="mt-5" />
 
         {mode === "mdp" && (
           <form onSubmit={envoyerMdp}>
@@ -105,7 +107,7 @@ export default function Connexion() {
         </div>
         <p className={`mt-4 flex items-center justify-center gap-1.5 text-sm ${etats.cl}`}><etats.Ic size={16} /> {etats.txt}</p>
         <BandeauVersion className="text-center mt-1" />
-      </div>
+      </main>
     </div>
   );
 }

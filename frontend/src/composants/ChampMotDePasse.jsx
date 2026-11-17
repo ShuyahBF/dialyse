@@ -7,7 +7,7 @@ export default function ChampMotDePasse({ valeur, onChange, placeholder, autoCom
   return (
     <div className="relative">
       <input id={id} type={visible ? "text" : "password"} value={valeur} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        autoComplete={autoComplete} className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-12 focus:outline-none focus:ring-2 focus:ring-turquoise-500" />
+        autoComplete={autoComplete} className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-12 focus:outline-none focus:ring-2 focus:ring-sky-500" />
       <button type="button" onClick={() => setVisible((v) => !v)} aria-label={visible ? "Masquer la saisie" : "Afficher la saisie"}
         title={visible ? "Masquer la saisie" : "Afficher la saisie"} className="absolute right-0 top-0 h-full w-11 flex items-center justify-center text-slate-500 hover:text-nuit">
         {visible ? <EyeOff size={20} /> : <Eye size={20} />}

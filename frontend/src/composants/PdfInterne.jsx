@@ -19,7 +19,7 @@ export default function PdfInterne({ titre, chemin, onFermer }) {
       <Bouton icone={Printer} variante="principal" disabled={!url} onClick={() => cadre.current?.contentWindow?.print()}>Imprimer</Bouton>
       <Bouton onClick={onFermer}>Fermer</Bouton></>}>
       {erreur ? <p className="text-rose-700 text-sm">{erreur}</p> : !url ? <div className="py-10 flex justify-center"><span className="jauge" /></div>
-        : <iframe ref={cadre} title={titre} src={url + "#toolbar=0&navpanes=0"} className="w-full h-[60dvh] rounded-lg border border-slate-200" />}
+        : <iframe ref={cadre} title={titre} src={url + "#toolbar=0&navpanes=0"} className="w-full h-[60dvh] rounded-lg ring-1 ring-encre/10" />}
     </Modal>
   );
 }

@@ -10,12 +10,12 @@ export default function Modal({ titre, onFermer, large = false, children, pied }
     return () => window.removeEventListener("keydown", f);
   }, [onFermer]);
   return (
-    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-nuit/50 p-2 sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onFermer()}>
+    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-encre/60 p-2 sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onFermer()}>
       <div role="dialog" aria-modal="true" aria-label={titre}
-        className={`w-full ${large ? "max-w-xl" : "max-w-md"} max-h-[85dvh] flex flex-col rounded-2xl bg-white shadow-2xl`}>
+        className={`w-full ${large ? "max-w-xl" : "max-w-md"} max-h-[85dvh] flex flex-col rounded-3xl bg-white shadow-2xl`}>
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
           <h2 className="text-lg font-semibold">{titre}</h2>
-          <button onClick={onFermer} aria-label="Fermer" title="Fermer" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100">
+          <button onClick={onFermer} aria-label="Fermer" title="Fermer" className="rounded-full p-1.5 text-ardoise hover:bg-brume">
             <X size={20} />
           </button>
         </div>

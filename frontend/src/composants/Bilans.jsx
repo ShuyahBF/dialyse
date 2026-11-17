@@ -93,13 +93,13 @@ export default function Bilans({ patient, peutEcrire }) {
       )}
       {!bilans.length ? <p className="text-sm text-slate-500 mt-3">Aucun bilan enregistré.</p> : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-slate-200 mt-3">
+          <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 mt-3">
             <table className="tableau">
               <thead><tr><th>Date</th><th>Type</th>{presents.map((p) => <th key={p.cle} className="num" title={p.unite}>{p.libelle}</th>)}<th className="num">URR %</th></tr></thead>
               <tbody>
                 {bilans.map((b) => (
                   <tr key={b.id}>
-                    <td className="whitespace-nowrap font-medium text-sky-800">{dateFr(b.date_prelevement)}</td><td>{b.type}</td>
+                    <td className="whitespace-nowrap font-medium text-emeraude">{dateFr(b.date_prelevement)}</td><td>{b.type}</td>
                     {presents.map((p) => <td key={p.cle} className="num"><Valeur v={b.analyse.lignes[p.cle]} /></td>)}
                     <td className={`num ${b.analyse.urr != null && b.analyse.urr < cat.urr_cible ? "text-orange-700 font-medium" : ""}`}>{b.analyse.urr != null ? nb(b.analyse.urr) : ""}</td>
                   </tr>
