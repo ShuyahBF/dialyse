@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton, { BoutonIcone } from "../composants/Bouton.jsx";
 import ChampMotDePasse from "../composants/ChampMotDePasse.jsx";
+import ForceMotDePasse from "../composants/ForceMotDePasse.jsx";
 import { Champ, Liste, Pastille, Texte } from "../composants/Champs.jsx";
 import Modal from "../composants/Modal.jsx";
 import ThTri from "../composants/ThTri.jsx";
 import { api } from "../lib/api.js";
 import { useApp } from "../lib/contexte.jsx";
+import { motDePasseAssezFort } from "../lib/motdepasse.js";
 import { trierLignes, useTri } from "../lib/tri.js";
 
 export default function Utilisateurs() {
@@ -34,15 +36,15 @@ export default function Utilisateurs() {
     await charger();
   }
   const affichees = trierLignes(lignes, tri.cle, tri.sens);
-  const valide = modal && (modal.mode === "mdp" ? modal.form.mot_de_passe?.length >= 8
-    : modal.form.nom_affiche && (modal.mode === "modifier" || (modal.form.login && modal.form.role && modal.form.mot_de_passe?.length >= 8)));
+  const valide = modal && (modal.mode === "mdp" ? motDePasseAssezFort(modal.form.mot_de_passe)
+    : modal.form.nom_affiche && (modal.mode === "modifier" || (modal.form.login && modal.form.role && motDePasseAssezFort(modal.form.mot_de_passe))));
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
         <h1 className="text-2xl font-semibold">Gestion Des Comptes</h1>
         <div className="flex gap-2">
           <Bouton icone={RefreshCw} onClick={() => avecToast("Actualisation des comptes", charger, () => "Comptes actualisés")}>Actualiser</Bouton>
-          <Bouton icone={Plus} variante="principal" onClick={() => setModal({ mode: "creer", form: { role: roles[0]?.valeur || "" } })}>Nouveau compte</Bouton>
+          <Bouton icone={Plus} variante="principal" onClick={() => setModal({ mode: "creer", form: { role: "" } })}>Nouveau compte</Bouton>
         </div>
       </div>
       <BandeauVersion detaille className="mb-3" />
@@ -75,10 +77,11 @@ export default function Utilisateurs() {
           {modal.mode !== "mdp" && <Texte libelle="Nom affiché" valeur={modal.form.nom_affiche} onChange={(v) => maj("nom_affiche", v)} placeholder="BADINI Awa" />}
           {modal.mode !== "mdp" && modal.compte?.id !== utilisateur.id && <Liste libelle="Rôle" valeur={modal.form.role} onChange={(v) => maj("role", v)} options={roles} />}
           {modal.mode !== "modifier" && (
-            <Champ libelle="Mot de passe provisoire" aide="8 caractères au moins, avec une lettre et un chiffre ; à changer à la première connexion">
+            <Champ libelle="Mot de passe provisoire" aide="À changer par la personne à sa première connexion">
               <ChampMotDePasse valeur={modal.form.mot_de_passe || ""} onChange={(v) => maj("mot_de_passe", v)} autoComplete="new-password" />
             </Champ>
           )}
+          {modal.mode !== "modifier" && <ForceMotDePasse valeur={modal.form.mot_de_passe} />}
           {modal.mode === "modifier" && <p className="text-xs text-slate-500">« Modifié, non enregistré » : cliquez sur Enregistrer pour valider.</p>}
         </Modal>
       )}

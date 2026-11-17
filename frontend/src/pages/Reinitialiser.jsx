@@ -5,9 +5,11 @@ import { Link, useSearchParams } from "react-router-dom";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton from "../composants/Bouton.jsx";
 import ChampMotDePasse from "../composants/ChampMotDePasse.jsx";
+import ForceMotDePasse from "../composants/ForceMotDePasse.jsx";
 import { Champ } from "../composants/Champs.jsx";
 import Logo from "../composants/Logo.jsx";
 import { api } from "../lib/api.js";
+import { motDePasseAssezFort } from "../lib/motdepasse.js";
 import { useApp } from "../lib/contexte.jsx";
 
 export default function Reinitialiser() {
@@ -16,7 +18,7 @@ export default function Reinitialiser() {
   const [a, setA] = useState("");
   const [b, setB] = useState("");
   const [fini, setFini] = useState(false);
-  const faible = a.length < 8 || !/[a-zA-Z]/.test(a) || !/\d/.test(a);
+  const faible = !motDePasseAssezFort(a);
   const enregistrer = async () => {
     await avecToast("Enregistrement du mot de passe", () => api("/auth/reinitialiser", { methode: "POST", avecJeton: false, corps: { jeton: params.get("jeton") || "", mot_de_passe: a } }), () => "Mot de passe modifié");
     setFini(true);
@@ -30,6 +32,7 @@ export default function Reinitialiser() {
         ) : (
           <>
             <Champ libelle="Nouveau mot de passe" aide="8 caractères au moins, avec une lettre et un chiffre"><ChampMotDePasse valeur={a} onChange={setA} autoComplete="new-password" /></Champ>
+            <ForceMotDePasse valeur={a} />
             <Champ libelle="Confirmer le mot de passe"><ChampMotDePasse valeur={b} onChange={setB} autoComplete="new-password" /></Champ>
             {b && a !== b && <p className="text-sm text-rose-700 mb-2">Les deux mots de passe sont différents.</p>}
             <Bouton icone={KeyRound} variante="principal" className="w-full" disabled={faible || a !== b || !params.get("jeton")} onClick={enregistrer}>Enregistrer</Bouton>
