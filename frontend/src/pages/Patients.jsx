@@ -26,13 +26,13 @@ function BarreEnregistrement({ modifie, onEnregistrer, desactive }) {
   );
 }
 
-function OngletIdentite({ p, listes, peutEcrire, enregistrer }) {
-  const f = useFormulaire({ nom: p.nom || "", prenom: p.prenom || "", sexe: p.sexe || "", date_naissance: p.date_naissance || "", telephone: p.telephone || "",
+function OngletIdentite({ p, listes, peutEcrire, enregistrer, organismes }) {
+  const f = useFormulaire({ organisme_id: p.organisme_id || "", taux: p.taux_prise_en_charge ?? "", nom: p.nom || "", prenom: p.prenom || "", sexe: p.sexe || "", date_naissance: p.date_naissance || "", telephone: p.telephone || "",
     adresse: p.adresse || "", prise_en_charge: p.prise_en_charge || "", numero_assurance: p.numero_assurance || "", pa_nom: p.personne_a_prevenir?.nom || "",
     pa_tel: p.personne_a_prevenir?.telephone || "", pa_lien: p.personne_a_prevenir?.lien || "" });
   const v = f.valeurs;
   const envoyer = () => enregistrer({ nom: v.nom, prenom: v.prenom, sexe: v.sexe, date_naissance: v.date_naissance, telephone: v.telephone, adresse: v.adresse,
-    prise_en_charge: v.prise_en_charge, numero_assurance: v.numero_assurance, personne_a_prevenir: { nom: v.pa_nom, telephone: v.pa_tel, lien: v.pa_lien } }, f.reinitialiser, v);
+    prise_en_charge: v.prise_en_charge, numero_assurance: v.numero_assurance, ...(organismes.length || v.organisme_id ? { organisme_id: v.organisme_id } : {}), taux_prise_en_charge: v.taux === "" ? null : v.taux, personne_a_prevenir: { nom: v.pa_nom, telephone: v.pa_tel, lien: v.pa_lien } }, f.reinitialiser, v);
   return (
     <fieldset disabled={!peutEcrire}>
       <Texte libelle="Nom" valeur={v.nom} onChange={(x) => f.maj("nom", x)} placeholder="BADINI" />
@@ -43,6 +43,8 @@ function OngletIdentite({ p, listes, peutEcrire, enregistrer }) {
       <Texte libelle="Adresse" valeur={v.adresse} onChange={(x) => f.maj("adresse", x)} />
       <Liste libelle="Prise en charge" valeur={v.prise_en_charge} onChange={(x) => f.maj("prise_en_charge", x)} options={listes.prises_en_charge} />
       <Texte libelle="Numéro d'assurance" valeur={v.numero_assurance} onChange={(x) => f.maj("numero_assurance", x)} />
+      {organismes.length > 0 && <Liste libelle="Organisme payeur" valeur={v.organisme_id} onChange={(x) => f.maj("organisme_id", x)} options={organismes.map((o) => ({ valeur: o.id, libelle: `${o.nom} (${o.taux} %)` }))} vide="Aucun (paiement direct)" />}
+      {organismes.length > 0 && <Texte libelle="Taux de prise en charge personnalisé (%)" type="number" valeur={v.taux} onChange={(x) => f.maj("taux", x)} aide="Vide : taux de l'organisme." />}
       <p className="text-sm font-medium mb-1 mt-2">Personne à prévenir</p>
       <Texte libelle="Nom" valeur={v.pa_nom} onChange={(x) => f.maj("pa_nom", x)} placeholder="BADINI Issa" />
       <Texte libelle="Téléphone" valeur={v.pa_tel} onChange={(x) => f.maj("pa_tel", x)} />
@@ -177,6 +179,9 @@ function Dossier({ id, onFermer, onChange }) {
   const [p, setP] = useState(null);
   const [onglet, setOnglet] = useState("identite");
   const medical = voitMedical(utilisateur.role);
+  const [organismes, setOrganismes] = useState([]);
+  // La liste des organismes n'est lue que par les rôles de la caisse (le serveur refuse les autres : on ignore l'erreur).
+  useEffect(() => { if (["secretariat", "admin", "super_admin"].includes(utilisateur.role)) api("/facturation/organismes").then(setOrganismes).catch(() => {}); }, [utilisateur.role]);
   const charger = useCallback(() => api(`/patients/${id}`).then(setP), [id]);
   // `onFermer` change à chaque rendu du parent : on le garde dans une référence pour ne recharger (et journaliser l'ouverture) qu'une seule fois.
   const fermerRef = useRef(onFermer);
@@ -206,7 +211,7 @@ function Dossier({ id, onFermer, onChange }) {
           <button key={k} onClick={() => setOnglet(k)} className={`px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 ${onglet === k ? "border-turquoise-600 text-turquoise-700" : "border-transparent text-slate-500 hover:text-nuit"}`}>{l}</button>
         ))}
       </div>
-      {onglet === "identite" && <OngletIdentite p={p} listes={listes} peutEcrire={peutIdentite} enregistrer={enregistrer} />}
+      {onglet === "identite" && <OngletIdentite p={p} listes={listes} peutEcrire={peutIdentite} enregistrer={enregistrer} organismes={organismes} />}
       {onglet === "medical" && <OngletMedical p={p} listes={listes} peutEcrire={peutMedical} enregistrer={enregistrer} />}
       {onglet === "prescription" && <OngletPrescription p={p} listes={listes} peutEcrire={peutPrescrire} enregistrer={enregistrer} />}
       {onglet === "acces" && <OngletAcces p={p} listes={listes} peutEcrire={peutMedical} recharger={charger} />}

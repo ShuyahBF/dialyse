@@ -16,7 +16,7 @@ export default defineConfig({
   // En développement, les routes de l'API sont relayées vers le serveur local (port 8000). Une navigation de page (Accept: text/html) reste
   // servie par le site : les écrans « /patients », « /postes »… portent le même nom que des routes de l'API.
   server: {
-    proxy: Object.fromEntries(["/api", "/auth", "/me", "/roles", "/listes", "/utilisateurs", "/patients", "/postes", "/seances", "/bilans", "/stock", "/tableau", "/historique", "/journal"]
+    proxy: Object.fromEntries(["/api", "/auth", "/me", "/roles", "/listes", "/utilisateurs", "/patients", "/postes", "/seances", "/bilans", "/stock", "/factures", "/facturation", "/tableau", "/historique", "/journal"]
       .map((chemin) => [chemin, { target: "http://localhost:8000", bypass: (req) => (req.headers.accept || "").includes("text/html") ? "/index.html" : undefined }])),
   },
 });
