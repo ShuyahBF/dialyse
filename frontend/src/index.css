@@ -36,3 +36,19 @@ table.tableau th.trie { background: #fed7aa; color: #0A1E3D; }
 /* Jauge circulaire d'attente (règle « Attentes et chargements »). */
 @keyframes tourne { to { transform: rotate(360deg); } }
 .jauge { width: 1.25rem; height: 1.25rem; border-radius: 9999px; border: 3px solid rgba(3, 49, 110, 0.2); border-top-color: #03316E; animation: tourne 0.8s linear infinite; }
+
+/* ===================================================================
+   Règle « tableaux de plus de 30 lignes » (18/11/2026) : le conteneur défile (module lib/defilementTableaux.js) ; l'en-tête reste visible en haut.
+   À l'impression, toutes les lignes sont imprimées.
+   =================================================================== */
+[data-defilement="oui"] thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+@media print {
+  [data-defilement="oui"] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}

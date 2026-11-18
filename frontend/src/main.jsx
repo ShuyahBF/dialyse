@@ -4,6 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { Fournisseur } from "./lib/contexte.jsx";
 import "./index.css";
+import { installerDefilementTableaux } from "./lib/defilementTableaux";   // règle 24 (18/11/2026) : tableaux de plus de 30 lignes
+
+installerDefilementTableaux();
 
 createRoot(document.getElementById("racine")).render(
   <React.StrictMode>
