@@ -70,3 +70,8 @@ Rappel des principales :
 ## Tests avant toute livraison
 - `cd backend && python -m pytest tests -q` (base en mémoire `mongomock`).
 - `cd frontend && npm test && npm run build`.
+
+## Tableaux de plus de 30 lignes : barre de défilement (règle 24, 18/11/2026 : « C'est une règle à considérer partout sur toutes les plateformes »)
+- Tout tableau qui présente PLUS DE 30 LIGNES défile dans son cadre (hauteur = 30 lignes + l'en-tête) au lieu d'allonger la page ; l'en-tête reste visible en haut pendant le défilement ;
+  à l'impression, toutes les lignes sortent. Exception possible : `<table data-sans-defilement>`.
+- Mise en œuvre ici : module global `frontend/src/lib/defilementTableaux.js` installé au démarrage du site (règles CSS dans `index.css`) : rien à ajouter tableau par tableau.
