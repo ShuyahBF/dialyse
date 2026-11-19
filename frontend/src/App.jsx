@@ -6,6 +6,10 @@ import { useApp } from "./lib/contexte.jsx";
 import Centres from "./pages/Centres.jsx";
 import FicheCentrePage from "./pages/FicheCentre.jsx";
 import SyntheseGroupe from "./pages/SyntheseGroupe.jsx";
+import Eau from "./pages/Eau.jsx";
+import Maintenance from "./pages/Maintenance.jsx";
+import Personnel from "./pages/Personnel.jsx";
+import Rentabilite from "./pages/Rentabilite.jsx";
 import Aujourdhui from "./pages/Aujourdhui.jsx";
 import Calendrier from "./pages/Calendrier.jsx";
 import Messagerie from "./pages/Messagerie.jsx";
@@ -49,6 +53,10 @@ export default function App() {
             <Route path="sauvegardes" element={<Sauvegardes />} />
             <Route path="stock" element={<Stock />} />
             <Route path="fiche-centre" element={<FicheCentrePage />} />
+            <Route path="personnel" element={<Personnel />} />
+            <Route path="maintenance" element={<Maintenance />} />
+            <Route path="eau" element={<Eau />} />
+            <Route path="rentabilite" element={<Rentabilite />} />
             <Route path="aujourdhui" element={<Aujourdhui />} />
             <Route path="calendrier" element={<Calendrier />} />
             <Route path="reservations" element={<Reservations />} />

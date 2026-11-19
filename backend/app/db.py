@@ -19,7 +19,7 @@ _base = None
 # « tout »). Les traitements qui doivent voir tous les centres (sauvegardes, migration) passent par `brut()`.
 # ---------------------------------------------------------------------------------------------------------------------------
 COLLECTIONS_CENTRE = {"patients", "postes", "seances", "bilans", "articles", "lots", "mouvements", "tarifs", "organismes", "factures",
-                      "modeles_adhesion", "historique", "parametres", "contacts", "wa_messages", "wa_modeles", "wa_demandes", "reservations", "liste_attente"}
+                      "modeles_adhesion", "historique", "parametres", "contacts", "wa_messages", "wa_modeles", "wa_demandes", "reservations", "liste_attente", "personnel", "affectations", "interventions", "controles_eau", "charges"}
 centre_courant: ContextVar = ContextVar("centre_courant", default=None)
 
 
@@ -161,6 +161,12 @@ def creer_index(b) -> None:
     b.reservations.create_index([("centre_id", 1), ("date", 1), ("statut", 1)])
     b.reservations.create_index("id", unique=True)
     b.liste_attente.create_index([("centre_id", 1), ("statut", 1), ("priorite", 1)])
+    b.personnel.create_index([("centre_id", 1), ("actif", 1)])
+    b.affectations.create_index([("centre_id", 1), ("date", 1), ("creneau", 1)])
+    b.affectations.create_index([("centre_id", 1), ("personnel_id", 1), ("date", 1)])
+    b.interventions.create_index([("centre_id", 1), ("statut", 1), ("date_prevue", 1)])
+    b.controles_eau.create_index([("centre_id", 1), ("test", 1), ("date", -1)])
+    b.charges.create_index([("centre_id", 1), ("mois", 1)])
     b.centres.create_index("id", unique=True)
     b.centres.create_index("prefixe", unique=True)
     b.utilisateurs.create_index("centre_id")
