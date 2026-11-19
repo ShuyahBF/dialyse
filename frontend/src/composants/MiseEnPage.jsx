@@ -21,6 +21,7 @@ const MENU = [
   { chemin: "/stock", libelle: "consommables et stocks", icone: Package, roles: ["super_admin", "admin", "medecin", "infirmier", "technicien"] },
   { chemin: "/facturation", libelle: "facturation", icone: Receipt, roles: ["super_admin", "admin", "secretariat"] },
   { chemin: "/centres", libelle: "centres de dialyse", icone: Building2, roles: ["super_admin"] },
+  { chemin: "/fiche-centre", libelle: "fiche du centre", icone: Building2, roles: ["super_admin", "admin"] },
   { chemin: "/utilisateurs", libelle: "gestion des comptes", icone: UserCog, roles: ["super_admin", "admin"] },
   { chemin: "/journal", libelle: "journal d'audit", icone: ClipboardList, roles: ["super_admin", "admin"] },
   { chemin: "/sauvegardes", libelle: "sauvegardes chiffrées", icone: DatabaseBackup, roles: ["super_admin", "admin"] },
@@ -35,7 +36,7 @@ export default function MiseEnPage() {
   const entrees = MENU.filter((m) => m.roles.length === 0 || m.roles.includes(utilisateur.role));
   // Compte du groupe (super administrateur, direction) sans centre choisi : seules les pages « Centres », « Comptes » et « Mon compte » fonctionnent.
   const sansCentre = utilisateur.groupe && !centreChoisi;
-  const pageLibre = ["/centres", "/utilisateurs", "/sauvegardes", "/compte"].some((p) => pathname.startsWith(p));
+  const pageLibre = ["/centres", "/fiche-centre", "/utilisateurs", "/sauvegardes", "/compte"].some((p) => pathname.startsWith(p));
   const nomCentre = utilisateur.groupe ? (centres.find((c) => c.id === centreChoisi)?.nom || "") : utilisateur.centre_nom;
   return (
     <ProtectionEcran>

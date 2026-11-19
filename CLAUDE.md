@@ -102,5 +102,12 @@ Rappel des principales :
 - Écran : barre latérale « Centre » (nom imposé, ou liste déroulante pour le groupe), page « Centres De Dialyse » (super administrateur), colonne et liste « Centre » dans « Gestion Des Comptes ». Tests : `backend/tests/test_multi_centres.py`.
 - **À venir** : rapports consolidés de tous les centres pour le directeur général et le super administrateur ; administrateur multi-centres ; transfert d'un patient d'un centre à l'autre.
 
+## Fiche du centre : logo, responsable, géolocalisation, papiers à en-tête (lot 17, propriétaire, 19/11/2026)
+- Champs de la fiche (collection `centres`, `backend/app/centres.py`) : responsable et sa fonction, adresse, ville, téléphone, e-mail, IFU / RCCM, latitude / longitude (ensemble ou vides, bornes contrôlées), logo.
+  Le super administrateur tient tout (« Centres De Dialyse ») ; l'administrateur du centre tient la fiche de SON centre (« Fiche Du Centre », `PUT /centre`) sauf nom, préfixe et état.
+- Logo : reçu en data URL, VÉRIFIÉ avec Pillow (PNG, JPEG ou WebP réels, 600 Ko au plus), réduit à 480 px et ré-encodé en PNG (métadonnées retirées) ; jamais dans les listes (`a_logo` seulement), joint à `GET /centre` et `GET /centres/{id}`.
+- En-tête des papiers : `centres.entete_courant()` (fiche du centre, complétée par l'ancien en-tête des factures de `parametres`) ; logo et responsable sur les PDF de factures et de rapports ; `GET /centre/papier-entete?format=A4|A5` = papier vierge (logo, nom, responsable, coordonnées, filet orange, pied avec IFU / adresse / position GPS), affiché dans le lecteur interne.
+- Écran : `composants/FicheCentre.jsx` (logo avec aperçu, géolocalisation « Utiliser ma position » + lien carte OpenStreetMap), `pages/FicheCentre.jsx`. Tests : `backend/tests/test_multi_centres.py`.
+
 ## Nom de domaine (propriétaire, 19/11/2026)
 - Site : `https://looisdialyse.space` ; API : `https://api.looisdialyse.space` (déclarés dans `render.yaml`, `domains`). Les anciennes adresses onrender.com ne sont plus utilisées. Aucune clé d'accès n'existait : on repart de zéro (`FRONTEND_ORIGIN` = `https://looisdialyse.space`).
