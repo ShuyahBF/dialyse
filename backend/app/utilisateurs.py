@@ -16,7 +16,7 @@ def _public(u: dict) -> dict:
     return {"id": u["id"], "login": u["login"], "nom_affiche": u.get("nom_affiche", ""), "role": u["role"],
             "role_libelle": roles.LIBELLES.get(u["role"], u["role"]), "actif": u.get("actif", True),
             "totp_actif": bool(u.get("totp_actif")), "doit_changer_mdp": bool(u.get("doit_changer_mdp")),
-            "created_at": u.get("created_at", "")}
+            "created_at": u.get("created_at", ""), "centre_id": u.get("centre_id"), "centre_nom": u.get("_centre_nom", "")}
 
 
 @routeur.post("/auth/login")
@@ -49,10 +49,22 @@ def _roles_autorises(u: dict) -> set:
     return set(roles.TOUS_LES_ROLES) if u["role"] == roles.SUPER_ADMIN else roles.ROLES_GERES_PAR_ADMIN
 
 
+def _noms_centres() -> dict:
+    """Identifiant → nom de chaque centre (une seule lecture pour toute la liste)."""
+    return {c["id"]: c["nom"] for c in db.brut().centres.find({}, {"_id": 0, "id": 1, "nom": 1})}
+
+
+def _filtre_centre(u: dict) -> dict:
+    """Comptes visibles : ceux du centre de travail (un administrateur n'en a pas d'autre) ; un compte du groupe sans centre choisi voit tout."""
+    return {"centre_id": u["centre_id"]} if u["centre_id"] else {}
+
+
 @routeur.get("/utilisateurs")
 def lister(u: dict = Depends(exiger_roles(roles.ADMINISTRATION))):
-    """Tous les comptes (sans secret), par identifiant."""
-    return [_public(x) for x in db.base().utilisateurs.find({}, {"_id": 0}).sort("login", 1)]
+    """Comptes (sans secret), par identifiant : ceux du centre de travail ; le super administrateur sans centre choisi les voit tous, avec leur centre."""
+    noms = _noms_centres()
+    return [_public({**x, "_centre_nom": noms.get(x.get("centre_id"), "Groupe" if not x.get("centre_id") else "")})
+            for x in db.brut().utilisateurs.find(_filtre_centre(u), {"_id": 0}).sort("login", 1)]
 
 
 @routeur.get("/roles")
@@ -60,6 +72,27 @@ def liste_roles(u: dict = Depends(utilisateur_courant)):
     """Liste finie des rôles que ce compte peut attribuer (liste déroulante)."""
     ok = _roles_autorises(u) if u["role"] in roles.ADMINISTRATION else set()
     return [{"valeur": r, "libelle": roles.LIBELLES[r]} for r in roles.TOUS_LES_ROLES if r in ok]
+
+
+def _centre_du_nouveau_compte(corps: dict, u: dict, role: str):
+    """
+    Centre de rattachement d'un nouveau compte. Un administrateur crée toujours dans SON centre. Le super administrateur peut désigner un
+    centre (`centre_id`), sinon c'est le centre où il travaille ; un compte du groupe (super administrateur, direction) peut n'avoir AUCUN
+    centre (`centre_id` vide). Tout autre rôle doit avoir un centre.
+    """
+    if u["role"] != roles.SUPER_ADMIN:
+        return u["centre_id"]
+    if "centre_id" in corps:
+        voulu = str(corps.get("centre_id") or "").strip()
+    else:
+        voulu = u["centre_id"] or ""
+    if not voulu:
+        if role in roles.ROLES_GROUPE:
+            return None
+        validation.erreur("Choisissez le centre de ce compte")
+    if not db.brut().centres.find_one({"id": voulu}):
+        validation.erreur("Centre inconnu")
+    return voulu
 
 
 @routeur.post("/utilisateurs")
@@ -76,9 +109,10 @@ def creer(corps: dict, u: dict = Depends(exiger_roles(roles.ADMINISTRATION))):
         validation.erreur("Mot de passe provisoire trop faible : 8 caractères au moins, avec une lettre et un chiffre")
     if db.base().utilisateurs.find_one({"login": login_}):
         raise HTTPException(409, "Cet identifiant existe déjà")
+    centre_id = _centre_du_nouveau_compte(corps, u, role)
     doc = {"id": str(uuid.uuid4()), "login": login_, "nom_affiche": validation.texte(corps, "nom_affiche", "Nom affiché", True, 80),
            "role": role, "actif": True, "echecs": 0, "mot_de_passe_hash": securite.hacher_mot_de_passe(mdp),
-           "doit_changer_mdp": True, "created_at": db.maintenant(), "cree_par": u["login"]}
+           "doit_changer_mdp": True, "created_at": db.maintenant(), "cree_par": u["login"], "centre_id": centre_id}
     db.base().utilisateurs.insert_one(doc)
     journaliser("compte_cree", u, f"{login_} ({role})")
     return _public(doc)
@@ -86,7 +120,7 @@ def creer(corps: dict, u: dict = Depends(exiger_roles(roles.ADMINISTRATION))):
 
 def _cible(id_: str, u: dict) -> dict:
     """Compte visé, avec contrôle du droit de le gérer (un admin ne touche ni aux admins ni au super administrateur)."""
-    c = db.base().utilisateurs.find_one({"id": id_})
+    c = db.base().utilisateurs.find_one({"id": id_, **_filtre_centre(u)})            # un compte d'un autre centre est « introuvable »
     if not c:
         raise HTTPException(404, "Compte introuvable")
     if c["role"] not in _roles_autorises(u) and c["id"] != u["id"]:
@@ -135,7 +169,7 @@ def reinitialiser(id_: str, corps: dict, u: dict = Depends(exiger_roles(roles.AD
 @routeur.get("/journal")
 def journal(action: str = "", acteur: str = "", limite: int = 300, u: dict = Depends(exiger_roles(roles.LECTURE_JOURNAL))):
     """Journal d'audit (qui a fait quoi, quand) : les plus récentes lignes d'abord, filtrable. Consultation elle-même non journalisée (bruit)."""
-    filtre: dict = {}
+    filtre: dict = dict(_filtre_centre(u))                          # journal du centre de travail (tout le journal pour le groupe sans centre choisi)
     if action:
         filtre["action"] = action
     if acteur:

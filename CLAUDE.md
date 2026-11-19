@@ -87,3 +87,17 @@ Rappel des principales :
   d'attention, reste à faire. Jamais de secret (clé, mot de passe, chaîne de connexion) dans l'e-mail.
 - Charger l'outil Gmail avec ToolSearch AVANT de dire qu'il manque ; s'il est vraiment indisponible, le dire dans le chat et ne pas clore la livraison.
 
+## Multi-centres (lot 15, propriétaire, 19/11/2026 : « multi centre de dialyse… on s'inspirera de eKol : chaque centre a ses patients, examens, utilisateurs, etc. »)
+- **Principe** : un centre = un « locataire ». Collection `centres` (id, nom, préfixe, ville, téléphone, actif) ; TOUTE donnée de travail porte `centre_id` : patients, postes, séances, bilans, articles, lots, mouvements, tarifs, organismes, factures,
+  modèles d'adhésion, historique, paramètres (compteurs, en-tête de la clinique) et journal. Les comptes (`utilisateurs`) ont un `centre_id`.
+- **Filtrage automatique et refus par défaut** (`backend/app/db.py`) : `db.base()` renvoie la vue du centre courant ; les collections de `COLLECTIONS_CENTRE` sont filtrées sur `centre_id` en lecture, modification, suppression et marquées à l'écriture. Sans centre courant : erreur 400
+  (jamais « tout »). Un écran ne peut donc pas « oublier » de filtrer. `db.brut()` (sans filtre) est réservé à la migration, aux sauvegardes (tous centres, super administrateur) et aux listes de centres : toute nouvelle utilisation doit avoir une raison écrite.
+  Toute NOUVELLE collection de données de centre est ajoutée à `COLLECTIONS_CENTRE` (et son index unique devient « par centre »).
+- **Centre de la requête** (`auth.utilisateur_courant`, dépendance ASYNCHRONE exprès : la variable de contexte doit être posée dans la tâche de la requête) : un compte rattaché à un centre travaille TOUJOURS dans le sien (l'en-tête `X-Centre` est ignoré : aucun passage d'un centre à l'autre) ;
+  un compte du GROUPE (super administrateur, ou direction sans centre : `roles.ROLES_GROUPE`) choisit son centre par `X-Centre` (sinon 400 « Choisissez d'abord un centre ») ; un centre désactivé ferme l'accès de ses comptes (le super administrateur reste admis).
+- **Comptes** : un administrateur ne voit et ne crée que les comptes de SON centre (un compte d'un autre centre est « introuvable ») ; le super administrateur crée les centres (`POST /centres`) et choisit le centre d'un nouveau compte ; identifiants (`login`) uniques sur toute la plateforme.
+- **Codes et numéros par centre** : codes patients `<préfixe>-000001` (compteur par centre ; le préfixe ne change plus après le premier patient) ; numérotation des factures, noms d'articles et modèle « defaut » uniques DANS un centre (anciens index uniques retirés au démarrage par `creer_index`).
+- **Migration** (`centres.amorcer_centre_initial`, idempotente, à chaque démarrage et après une restauration) : « Centre principal » (préfixe DIAL) reprend toutes les données d'avant ; les comptes du groupe restent sans centre.
+- **Notifications du téléphone** : le jeton de lecture porte le centre ; le flux ne couvre que ce centre. **Sauvegardes** : base complète (tous les centres), super administrateur seul, comme avant.
+- Écran : barre latérale « Centre » (nom imposé, ou liste déroulante pour le groupe), page « Centres De Dialyse » (super administrateur), colonne et liste « Centre » dans « Gestion Des Comptes ». Tests : `backend/tests/test_multi_centres.py`.
+- **À venir** : rapports consolidés de tous les centres pour le directeur général et le super administrateur ; administrateur multi-centres ; transfert d'un patient d'un centre à l'autre.

@@ -14,7 +14,7 @@ import { motDePasseAssezFort } from "../lib/motdepasse.js";
 import { trierLignes, useTri } from "../lib/tri.js";
 
 export default function Utilisateurs() {
-  const { utilisateur, avecToast, toast } = useApp();
+  const { utilisateur, avecToast, toast, centres } = useApp();
   const [lignes, setLignes] = useState([]);
   const [roles, setRoles] = useState([]);
   const [modal, setModal] = useState(null);           // { mode: "creer" | "modifier" | "mdp", compte?, form }
@@ -35,6 +35,8 @@ export default function Utilisateurs() {
     await avecToast(c.actif ? "Désactivation" : "Activation", () => api(`/utilisateurs/${c.id}`, { methode: "PUT", corps: { actif: !c.actif } }), () => (c.actif ? "Compte désactivé" : "Compte activé"));
     await charger();
   }
+  // Le super administrateur sans centre choisi voit les comptes de tous les centres (colonne « Centre ») et choisit le centre d'un nouveau compte.
+  const voitCentre = utilisateur.role === "super_admin";
   const affichees = trierLignes(lignes, tri.cle, tri.sens);
   const valide = modal && (modal.mode === "mdp" ? motDePasseAssezFort(modal.form.mot_de_passe)
     : modal.form.nom_affiche && (modal.mode === "modifier" || (modal.form.login && modal.form.role && motDePasseAssezFort(modal.form.mot_de_passe))));
@@ -51,13 +53,13 @@ export default function Utilisateurs() {
       <div className="overflow-x-auto rounded-xl ring-1 ring-encre/10 bg-white">
         <table className="tableau">
           <thead><tr>
-            <ThTri cle="login" tri={tri}>Identifiant</ThTri><ThTri cle="nom_affiche" tri={tri}>Nom</ThTri><ThTri cle="role_libelle" tri={tri}>Rôle</ThTri>
+            <ThTri cle="login" tri={tri}>Identifiant</ThTri><ThTri cle="nom_affiche" tri={tri}>Nom</ThTri><ThTri cle="role_libelle" tri={tri}>Rôle</ThTri>{voitCentre && <ThTri cle="centre_nom" tri={tri}>Centre</ThTri>}
             <ThTri cle="actif" tri={tri}>État</ThTri><ThTri cle="totp_actif" tri={tri}>2FA</ThTri><th>Actions</th>
           </tr></thead>
           <tbody>
             {affichees.map((c) => (
               <tr key={c.id} onClick={() => setSelection(c.id)} className={selection === c.id ? "ligne-selectionnee" : ""}>
-                <td className="font-medium text-emeraude">{c.login}</td><td>{c.nom_affiche}</td><td>{c.role_libelle}</td>
+                <td className="font-medium text-emeraude">{c.login}</td><td>{c.nom_affiche}</td><td>{c.role_libelle}</td>{voitCentre && <td>{c.centre_nom || "—"}</td>}
                 <td>{c.actif ? <Pastille couleur="vert" icone={UserCheck}>Actif</Pastille> : <Pastille couleur="rouge" icone={UserX}>Désactivé</Pastille>}</td>
                 <td>{c.totp_actif ? <Pastille couleur="vert">Oui</Pastille> : <Pastille>Non</Pastille>}</td>
                 <td className="whitespace-nowrap">
@@ -75,6 +77,11 @@ export default function Utilisateurs() {
           pied={<><Bouton onClick={() => setModal(null)}>Annuler</Bouton><Bouton icone={Save} variante="principal" disabled={!valide} onClick={enregistrer}>Enregistrer</Bouton></>}>
           {modal.mode === "creer" && <Texte libelle="Identifiant" valeur={modal.form.login} onChange={(v) => maj("login", v)} placeholder="awa.badini" />}
           {modal.mode !== "mdp" && <Texte libelle="Nom affiché" valeur={modal.form.nom_affiche} onChange={(v) => maj("nom_affiche", v)} placeholder="BADINI Awa" />}
+          {modal.mode === "creer" && voitCentre && (
+            <Liste libelle="Centre" valeur={modal.form.centre_id ?? (utilisateur.groupe ? "" : utilisateur.centre_id) ?? ""} onChange={(v) => maj("centre_id", v)}
+              options={centres.filter((c) => c.actif).map((c) => ({ valeur: c.id, libelle: c.nom }))} vide="— Groupe (aucun centre) —"
+              aide="Un compte « Groupe » (super administrateur, directeur général) choisit lui-même son centre de travail." />
+          )}
           {modal.mode !== "mdp" && modal.compte?.id !== utilisateur.id && <Liste libelle="Rôle" valeur={modal.form.role} onChange={(v) => maj("role", v)} options={roles} />}
           {modal.mode !== "modifier" && (
             <Champ libelle="Mot de passe provisoire" aide="À changer par la personne à sa première connexion">

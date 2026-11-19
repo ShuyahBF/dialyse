@@ -17,6 +17,7 @@ from .anonyme import routeur as routeur_anonyme
 from .passkeys import routeur as routeur_passkeys
 from .config import env
 from .bilans import routeur as routeur_bilans
+from .centres import amorcer_centre_initial, routeur as routeur_centres
 from .deuxfacteurs import routeur as routeur_2fa
 from .facturation import routeur as routeur_facturation
 from .historique import routeur as routeur_historique
@@ -43,7 +44,7 @@ app = FastAPI(title="Dialyse", version=lot.VERSION, lifespan=cycle_de_vie)
 # CORS : seul le site web de la clinique (FRONTEND_ORIGIN) peut appeler l'API depuis un navigateur.
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in env("FRONTEND_ORIGIN").split(",") if o.strip()],
                    allow_methods=["*"], allow_headers=["*"])
-for _r in (routeur_utilisateurs, routeur_acces, routeur_adhesion, routeur_anonyme, routeur_passkeys, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_sauvegardes, routeur_tableau, routeur_historique):
+for _r in (routeur_centres, routeur_utilisateurs, routeur_acces, routeur_adhesion, routeur_anonyme, routeur_passkeys, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_sauvegardes, routeur_tableau, routeur_historique):
     app.include_router(_r)
 
 
@@ -77,7 +78,7 @@ def amorcer_super_admin() -> None:
     if b.utilisateurs.count_documents({}) == 0:
         b.utilisateurs.insert_one({"id": str(uuid.uuid4()), "login": login, "nom_affiche": "Super administrateur", "role": roles.SUPER_ADMIN,
                                    "actif": True, "echecs": 0, "mot_de_passe_hash": securite.hacher_mot_de_passe(mdp),
-                                   "doit_changer_mdp": True, "created_at": db.maintenant()})
+                                   "doit_changer_mdp": True, "created_at": db.maintenant(), "centre_id": None})
     elif env("SUPERADMIN_REINITIALISER").strip().lower() in ("oui", "1", "true"):
         fiche = b.utilisateurs.find_one({"login": login, "role": roles.SUPER_ADMIN})
         if fiche:
@@ -123,6 +124,7 @@ def demarrage() -> None:
     if env("TACHES_DE_FOND", "1") != "0":
         threading.Thread(target=taches_de_fond, daemon=True).start()
     try:
+        amorcer_centre_initial()                   # reprise des données d'avant le multi-centres (idempotent)
         amorcer_super_admin()
     except Exception as e:                         # base injoignable au démarrage : l'API répondra « base injoignable »
         print("Amorçage impossible :", e)

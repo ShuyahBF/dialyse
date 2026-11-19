@@ -112,7 +112,7 @@ def creer_jeton(corps: dict, u: dict = Depends(exiger_roles(ROLES_SUIVI))):
     anciens = list(b.jetons_alertes.find({"utilisateur_id": u["id"]}).sort("cree", 1))
     for a in anciens[: max(0, len(anciens) - (MAX_JETONS - 1))]:
         b.jetons_alertes.delete_one({"id": a["id"]})
-    b.jetons_alertes.insert_one({"id": str(uuid.uuid4()), "utilisateur_id": u["id"], "empreinte": _empreinte(jeton),
+    b.jetons_alertes.insert_one({"id": str(uuid.uuid4()), "utilisateur_id": u["id"], "centre_id": u.get("centre_id"), "empreinte": _empreinte(jeton),
                                  "appareil": str(corps.get("appareil", ""))[:60], "cree": db.maintenant()})
     journaliser("jeton_alertes_cree", u, str(corps.get("appareil", ""))[:60])
     return {"jeton": jeton}
@@ -137,5 +137,10 @@ def flux(x_jeton_alertes: str = Header(default="")):
         ok = bool(u and u.get("actif", True) and u.get("role") in ROLES_SUIVI and hmac.compare_digest(fiche["empreinte"], _empreinte(x_jeton_alertes)))
     if not ok:
         raise HTTPException(401, "Jeton de notification invalide")
+    # Le flux ne porte QUE sur le centre du téléphone (celui du compte, ou celui choisi quand le jeton a été créé) : jamais un autre centre.
+    centre = fiche.get("centre_id") or u.get("centre_id")
+    if not centre:
+        raise HTTPException(401, "Jeton de notification sans centre : recréez-le depuis l'application")
+    db.fixer_centre(centre)
     r = construire(b)
     return {"alertes": r["alertes"], "critiques": r["critiques"]}

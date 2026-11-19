@@ -22,6 +22,9 @@ LIBELLES = {SUPER_ADMIN: "Super administrateur", ADMIN: "Administrateur", DIRECT
 ROLES_GERES_PAR_ADMIN = {DIRECTION, MEDECIN, INFIRMIER, SECRETARIAT, TECHNICIEN}
 
 ADMINISTRATION = {ADMIN, SUPER_ADMIN}
+# Rôles pouvant ne dépendre d'AUCUN centre précis (compte « du groupe ») : ils choisissent alors le centre où ils travaillent (en-tête X-Centre).
+# Tous les autres rôles sont rattachés à UN centre, qu'ils ne peuvent pas quitter.
+ROLES_GROUPE = {SUPER_ADMIN, DIRECTION}
 SOIGNANTS = {MEDECIN, INFIRMIER}
 # Données médicales : soignants + administration.
 VOIT_MEDICAL = {MEDECIN, INFIRMIER, ADMIN, SUPER_ADMIN}

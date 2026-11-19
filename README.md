@@ -13,6 +13,11 @@ comptes à rôles, journal d'audit, double authentification, données sensibles 
   **validation et verrouillage par le médecin**. Alertes cliniques calculées (hypotension, prise de poids, Kt/V insuffisant, UF rapide…).
 - **Tableau de bord**, **journal d'audit** (chaque ouverture d'un dossier est tracée), **gestion des comptes**, double authentification.
 
+## Multi-centres
+Plusieurs centres de dialyse sur la même plateforme, sur le modèle d'e-Kol : chaque centre a ses patients, postes, séances, bilans, stocks, factures et comptes. Le super administrateur crée les centres
+(« Centres De Dialyse ») puis l'administrateur de chaque centre (« Gestion Des Comptes »). Les comptes d'un centre ne voient jamais un autre centre ; le super administrateur et le directeur général choisissent le centre dans la barre latérale.
+Les données existantes sont rattachées automatiquement à « Centre principal » (préfixe DIAL).
+
 ## Rôles
 | Rôle | Droits |
 |---|---|
