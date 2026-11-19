@@ -101,3 +101,6 @@ Rappel des principales :
 - **Notifications du téléphone** : le jeton de lecture porte le centre ; le flux ne couvre que ce centre. **Sauvegardes** : base complète (tous les centres), super administrateur seul, comme avant.
 - Écran : barre latérale « Centre » (nom imposé, ou liste déroulante pour le groupe), page « Centres De Dialyse » (super administrateur), colonne et liste « Centre » dans « Gestion Des Comptes ». Tests : `backend/tests/test_multi_centres.py`.
 - **À venir** : rapports consolidés de tous les centres pour le directeur général et le super administrateur ; administrateur multi-centres ; transfert d'un patient d'un centre à l'autre.
+
+## Nom de domaine (propriétaire, 19/11/2026)
+- Site : `https://looisdialyse.space` ; API : `https://api.looisdialyse.space` (déclarés dans `render.yaml`, `domains`). Les anciennes adresses onrender.com ne sont plus utilisées. Aucune clé d'accès n'existait : on repart de zéro (`FRONTEND_ORIGIN` = `https://looisdialyse.space`).

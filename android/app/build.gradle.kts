@@ -17,8 +17,8 @@ android {
         versionCode = 1
         versionName = "1.0"
         // Adresses du site et de l'API de Dialyse. Surcharge à la compilation : -PsiteUrl=https://… -PapiUrl=https://…/api
-        buildConfigField("String", "SITE_URL", "\"${project.findProperty("siteUrl") ?: "https://dialyse-web.onrender.com/"}\"")
-        buildConfigField("String", "API_URL", "\"${project.findProperty("apiUrl") ?: "https://dialyse-api-kyqm.onrender.com"}\"")
+        buildConfigField("String", "SITE_URL", "\"${project.findProperty("siteUrl") ?: "https://looisdialyse.space/"}\"")
+        buildConfigField("String", "API_URL", "\"${project.findProperty("apiUrl") ?: "https://api.looisdialyse.space"}\"")
         // Date et heure de compilation (UTC) : « deploye_le » du signal de présence SAWALI
         buildConfigField("String", "DATE_BUILD", "\"${Instant.now()}\"")
     }
