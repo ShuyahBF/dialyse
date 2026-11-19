@@ -5,6 +5,7 @@ import Toasts from "./composants/Toasts.jsx";
 import { useApp } from "./lib/contexte.jsx";
 import Centres from "./pages/Centres.jsx";
 import FicheCentrePage from "./pages/FicheCentre.jsx";
+import SyntheseGroupe from "./pages/SyntheseGroupe.jsx";
 import Compte from "./pages/Compte.jsx";
 import Connexion from "./pages/Connexion.jsx";
 import Facturation from "./pages/Facturation.jsx";
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="sauvegardes" element={<Sauvegardes />} />
             <Route path="stock" element={<Stock />} />
             <Route path="fiche-centre" element={<FicheCentrePage />} />
+            <Route path="groupe" element={<SyntheseGroupe />} />
             <Route path="centres" element={<Centres />} />
             <Route path="utilisateurs" element={<Utilisateurs />} />
             <Route path="journal" element={<Journal />} />
