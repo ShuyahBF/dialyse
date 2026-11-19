@@ -1,6 +1,6 @@
 // Cadre du portail (présentation ZandGo) : barre latérale bleu nuit de 230 px (logo, menus à pictogrammes, élément actif en orange,
 // nom + rôle en pastille, déconnexion, version), menu replié derrière un bouton « Menu » sur téléphone. Majuscule à chaque mot (règle 18).
-import { Building2, BarChart3, CalendarDays, ClipboardList, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
+import { Building2, BarChart3, CalendarDays, CalendarRange, ClipboardList, MessageCircle, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
@@ -16,6 +16,9 @@ const MENU = [
   { chemin: "/suivi", libelle: "suivi anonymisé", icone: ShieldAlert, roles: ["super_admin", "admin", "direction", "medecin"] },
   { chemin: "/groupe", libelle: "synthèse des centres", icone: BarChart3, roles: ["super_admin", "direction"], groupe: true },
   { chemin: "/rapports", libelle: "rapports", icone: BarChart3, roles: ["super_admin", "admin", "direction", "medecin", "infirmier"] },
+  { chemin: "/calendrier", libelle: "calendrier d'activité", icone: CalendarRange, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
+  { chemin: "/reservations", libelle: "réservations", icone: ClipboardCheck, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
+  { chemin: "/messagerie", libelle: "centre de messagerie wa", icone: MessageCircle, roles: ["super_admin", "admin", "secretariat"] },
   { chemin: "/planning", libelle: "planning des séances", icone: CalendarDays, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/patients", libelle: "patients", icone: Users, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/modeles", libelle: "modèles de dossier d'adhésion", icone: ClipboardCheck, roles: ["super_admin", "admin"] },
@@ -31,7 +34,7 @@ const MENU = [
 ];
 
 export default function MiseEnPage() {
-  const { utilisateur, deconnecter, centres, centreChoisi, choisirCentre } = useApp();
+  const { utilisateur, deconnecter, centres, centreChoisi, choisirCentre, compteurs } = useApp();
   const { pathname } = useLocation();
   const [ouvert, setOuvert] = useState(false);            // menu replié sur téléphone, refermé après chaque choix
   useEffect(() => setOuvert(false), [pathname]);
@@ -74,7 +77,9 @@ export default function MiseEnPage() {
             {entrees.map(({ chemin, libelle, icone: Icone }) => (
               <NavLink key={chemin} to={chemin} end={chemin === "/"}
                 className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm font-semibold ${isActive ? "bg-white/10 text-citron" : "text-white/80 hover:bg-white/5 hover:text-white"}`}>
-                <Icone size={18} className="shrink-0" /> {titreMenu(libelle)}
+                <Icone size={18} className="shrink-0" /> <span className="min-w-0 flex-1">{titreMenu(libelle)}</span>
+                {/* Pastille : nombre d'éléments non traités de ce lien (règle du menu, 19/11/2026) ; jamais la couleur seule : le nombre est écrit */}
+                {compteurs[chemin] > 0 && <span className="shrink-0 rounded-full bg-citron px-1.5 py-0.5 text-[11px] font-bold leading-none text-white" aria-label={`${compteurs[chemin]} non traité(s)`} data-testid={`pastille-${chemin.slice(1)}`}>{compteurs[chemin] > 99 ? "99+" : compteurs[chemin]}</span>}
               </NavLink>
             ))}
           </nav>

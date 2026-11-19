@@ -85,8 +85,31 @@ def _appel_http(url: str, entetes: dict, corps: bytes) -> tuple[int, dict]:
         return etat, {}
 
 
-def envoyer(numero: str, texte: str) -> tuple[bool, str]:
-    """Envoie `texte` au numéro (chiffres, indicatif compris). Ne lève JAMAIS d'exception. Rend (ok, erreur lisible)."""
+MEDIA_TYPES = ("document", "image")
+MEDIA_MAX_OCTETS = 10 * 1024 * 1024          # protocole v3 : 10 Mo au plus (refusé localement, sans appel réseau)
+
+
+def _champ_media(media: dict) -> dict:
+    """Champ « media » du corps signé (protocole v3) : octets encodés en base64. Lève ValueError si le média est invalide."""
+    import base64
+    genre = str(media.get("type") or "").lower()
+    octets = media.get("contenu") or b""
+    if genre not in MEDIA_TYPES:
+        raise ValueError("Type de média invalide (document ou image)")
+    if not octets or len(octets) > MEDIA_MAX_OCTETS:
+        raise ValueError("Fichier vide ou de plus de 10 Mo")
+    champ = {"type": genre, "contenu_base64": base64.b64encode(octets).decode("ascii")}
+    for cle in ("nom_fichier", "mime", "legende"):
+        if media.get(cle):
+            champ[cle] = str(media[cle])[:200]
+    return champ
+
+
+def envoyer(numero: str, texte: str, media: dict | None = None, identifiant: str | None = None) -> tuple[bool, str]:
+    """
+    Envoie `texte` au numéro (chiffres, indicatif compris), avec un DOCUMENT ou une IMAGE facultatif (`media` : type, contenu en octets, nom_fichier, mime, legende ; protocole v3).
+    `identifiant` : identifiant du message (suivi des statuts de remise par SAWALI). Ne lève JAMAIS d'exception. Rend (ok, erreur lisible).
+    """
     try:
         if not configure():
             return False, "WhatsApp n'est pas configuré sur le serveur (LILUVINE_WA_URL et LILUVINE_WA_HMAC)"
@@ -94,9 +117,14 @@ def envoyer(numero: str, texte: str) -> tuple[bool, str]:
         message = (texte or "").strip()
         if not destinataire:
             return False, "Numéro WhatsApp invalide"
-        if not message:
+        if not message and not media:
             return False, "Message vide"
-        corps = {"id": str(uuid.uuid4()), "to": "+" + destinataire, "message": message[:LONGUEUR_MAX], "source": "Dialyse"}
+        corps = {"id": identifiant or str(uuid.uuid4()), "to": "+" + destinataire, "message": message[:LONGUEUR_MAX], "source": "Dialyse"}
+        if media:
+            try:
+                corps["media"] = _champ_media(media)
+            except ValueError as e:
+                return False, str(e)
         brut = json.dumps(corps, ensure_ascii=False, separators=(",", ":"))      # sérialisé UNE fois : ce texte est signé ET envoyé (même id au 2e essai)
         derniere = "Liluvine injoignable"
         for essai in (1, 2):

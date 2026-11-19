@@ -1,6 +1,6 @@
 """
 Accès à MongoDB. La base est ouverte à la première utilisation (Atlas) ou injectée par les tests (base en mémoire).
-Collections : centres, utilisateurs, parametres, journal, patients, postes, seances, bilans, articles, lots, mouvements, tarifs, organismes, factures, sauvegardes (+ morceaux), codes_acces, biometries, jetons_alertes, modeles_adhesion, passkeys, defis, historique.
+Collections : centres, contacts, wa_messages, wa_modeles, wa_demandes, wa_non_classes, retours_sawali, utilisateurs, parametres, journal, patients, postes, seances, bilans, articles, lots, mouvements, tarifs, organismes, factures, sauvegardes (+ morceaux), codes_acces, biometries, jetons_alertes, modeles_adhesion, passkeys, defis, historique.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ _base = None
 # « tout »). Les traitements qui doivent voir tous les centres (sauvegardes, migration) passent par `brut()`.
 # ---------------------------------------------------------------------------------------------------------------------------
 COLLECTIONS_CENTRE = {"patients", "postes", "seances", "bilans", "articles", "lots", "mouvements", "tarifs", "organismes", "factures",
-                      "modeles_adhesion", "historique", "parametres"}
+                      "modeles_adhesion", "historique", "parametres", "contacts", "wa_messages", "wa_modeles", "wa_demandes", "reservations", "liste_attente"}
 centre_courant: ContextVar = ContextVar("centre_courant", default=None)
 
 
@@ -152,6 +152,15 @@ def creer_index(b) -> None:
             b[coll].drop_index(nom)
         except Exception:
             pass
+    b.contacts.create_index([("centre_id", 1), ("numero", 1)], unique=True)           # un numéro = un contact DANS un centre
+    b.contacts.create_index([("centre_id", 1), ("dernier_le", -1)])
+    b.contacts.create_index("numero")                                               # réponses reçues : recherche du numéro dans tous les centres
+    b.wa_messages.create_index([("centre_id", 1), ("contact_id", 1), ("cree_le", -1)])
+    b.wa_messages.create_index("id", unique=True)
+    b.wa_demandes.create_index([("centre_id", 1), ("statut", 1), ("cree_le", -1)])
+    b.reservations.create_index([("centre_id", 1), ("date", 1), ("statut", 1)])
+    b.reservations.create_index("id", unique=True)
+    b.liste_attente.create_index([("centre_id", 1), ("statut", 1), ("priorite", 1)])
     b.centres.create_index("id", unique=True)
     b.centres.create_index("prefixe", unique=True)
     b.utilisateurs.create_index("centre_id")
