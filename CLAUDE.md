@@ -100,7 +100,7 @@ Rappel des principales :
 - **Migration** (`centres.amorcer_centre_initial`, idempotente, à chaque démarrage et après une restauration) : « Centre principal » (préfixe DIAL) reprend toutes les données d'avant ; les comptes du groupe restent sans centre.
 - **Notifications du téléphone** : le jeton de lecture porte le centre ; le flux ne couvre que ce centre. **Sauvegardes** : base complète (tous les centres), super administrateur seul, comme avant.
 - Écran : barre latérale « Centre » (nom imposé, ou liste déroulante pour le groupe), page « Centres De Dialyse » (super administrateur), colonne et liste « Centre » dans « Gestion Des Comptes ». Tests : `backend/tests/test_multi_centres.py`.
-- **À venir** : rapports consolidés de tous les centres pour le directeur général et le super administrateur ; administrateur multi-centres ; transfert d'un patient d'un centre à l'autre.
+- **À venir** : administrateur multi-centres.
 
 ## Fiche du centre : logo, responsable, géolocalisation, papiers à en-tête (lot 17, propriétaire, 19/11/2026)
 - Champs de la fiche (collection `centres`, `backend/app/centres.py`) : responsable et sa fonction, adresse, ville, téléphone, e-mail, IFU / RCCM, latitude / longitude (ensemble ou vides, bornes contrôlées), logo.
@@ -108,3 +108,10 @@ Rappel des principales :
 - Logo : reçu en data URL, VÉRIFIÉ avec Pillow (PNG, JPEG ou WebP réels, 600 Ko au plus), réduit à 480 px et ré-encodé en PNG (métadonnées retirées) ; jamais dans les listes (`a_logo` seulement), joint à `GET /centre` et `GET /centres/{id}`.
 - En-tête des papiers : `centres.entete_courant()` (fiche du centre, complétée par l'ancien en-tête des factures de `parametres`) ; logo et responsable sur les PDF de factures et de rapports ; `GET /centre/papier-entete?format=A4|A5` = papier vierge (logo, nom, responsable, coordonnées, filet orange, pied avec IFU / adresse / position GPS), affiché dans le lecteur interne.
 - Écran : `composants/FicheCentre.jsx` (logo avec aperçu, géolocalisation « Utiliser ma position » + lien carte OpenStreetMap), `pages/FicheCentre.jsx`. Tests : `backend/tests/test_multi_centres.py`.
+
+## Vue du groupe, transfert de patient, centre en haut (lot 18, propriétaire, 19/11/2026)
+- **Centre tout en haut** : barre fixe en haut de CHAQUE écran (`composants/MiseEnPage.jsx`, `data-testid="barre-centre"`) : logo et nom du centre (imposé) ou liste déroulante (comptes du groupe) ; la page se recharge au changement de centre.
+- **Synthèse des centres** (`backend/app/groupe.py`, `GET /groupe/synthese`, écran « Synthèse Des Centres ») : réservée au directeur général et au super administrateur SANS centre (`groupe`) ; une ligne par centre + totaux collés sous le tableau (règle 25), taux recalculés sur les totaux ; AGRÉGÉE, aucune identité de patient.
+  Seules routes à franchir les centres : le centre courant est fixé le temps du calcul de chaque ligne puis rétabli (`db.fixer_centre`).
+- **Transfert d'un patient** (`POST /patients/{id}/transfert`, super administrateur seul, centre de départ choisi) : CONSENTEMENT du patient obligatoire + motif (liste finie) ; le dossier est COPIÉ dans le centre d'arrivée (nouveau code du centre, bilans copiés, poste / modèle d'adhésion / organisme retirés) ;
+  au départ le patient passe « Transféré » (`transfere_vers`) et ses séances planifiées sont annulées, l'historique de séances et de factures y reste ; journalisé dans les DEUX centres (`patient_transfere_depart` / `patient_transfere_arrivee`). Tests : `backend/tests/test_groupe.py`.
