@@ -6,6 +6,9 @@ import { useApp } from "./lib/contexte.jsx";
 import Centres from "./pages/Centres.jsx";
 import FicheCentrePage from "./pages/FicheCentre.jsx";
 import SyntheseGroupe from "./pages/SyntheseGroupe.jsx";
+import Calendrier from "./pages/Calendrier.jsx";
+import Messagerie from "./pages/Messagerie.jsx";
+import Reservations from "./pages/Reservations.jsx";
 import Compte from "./pages/Compte.jsx";
 import Connexion from "./pages/Connexion.jsx";
 import Facturation from "./pages/Facturation.jsx";
@@ -45,6 +48,9 @@ export default function App() {
             <Route path="sauvegardes" element={<Sauvegardes />} />
             <Route path="stock" element={<Stock />} />
             <Route path="fiche-centre" element={<FicheCentrePage />} />
+            <Route path="calendrier" element={<Calendrier />} />
+            <Route path="reservations" element={<Reservations />} />
+            <Route path="messagerie" element={<Messagerie />} />
             <Route path="groupe" element={<SyntheseGroupe />} />
             <Route path="centres" element={<Centres />} />
             <Route path="utilisateurs" element={<Utilisateurs />} />

@@ -236,6 +236,9 @@ def annuler(id_: str, corps: dict, u: dict = Depends(exiger_roles(roles.PLANNING
                                                         "updated_at": db.maintenant(), "maj_par": u["login"]}})
     historique.noter("seances", id_, u, ["statut"])
     journaliser("seance_absente" if absent else "seance_annulee", u, id_)
+    if not absent:
+        from .messagerie import notifier
+        notifier("seance_annulee", s["patient_id"], {"date": s["date"], "creneau": s["creneau"], "heure": CRENEAU_HEURE.get(s["creneau"], "")})
     return _joindre([db.base().seances.find_one({"id": id_})], u["role"])[0]
 
 
@@ -344,6 +347,8 @@ def terminer(id_: str, corps: dict, u: dict = Depends(exiger_roles(roles.DEROULE
     db.base().seances.update_one({"id": id_}, {"$set": maj})
     historique.noter("seances", id_, u, ["statut"])
     journaliser("seance_terminee", u, id_)
+    from .messagerie import notifier
+    notifier("seance_terminee", s["patient_id"], {"date": s["date"], "creneau": s["creneau"]})
     return _joindre([db.base().seances.find_one({"id": id_})], u["role"])[0]
 
 
