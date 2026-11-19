@@ -109,3 +109,75 @@ def test_acces_sans_centre_refuse(client):
         assert getattr(e, "status_code", None) == 400
     finally:
         db.fixer_centre(CENTRE)
+
+
+# ---------- fiche du centre : logo, responsable, papier à en-tête A4 / A5, géolocalisation ----------
+
+def _png(taille=(300, 120), couleur=(200, 30, 30)):
+    """Petit PNG en « data URL » fabriqué pour les tests."""
+    import base64
+    import io
+    from PIL import Image
+    t = io.BytesIO()
+    Image.new("RGB", taille, couleur).save(t, "PNG")
+    return "data:image/png;base64," + base64.b64encode(t.getvalue()).decode()
+
+
+def test_fiche_du_centre_et_logo(client):
+    ha = entete(client, "adm")
+    corps = {"responsable": "Dr OUEDRAOGO Awa", "titre_responsable": "Directrice", "adresse": "Secteur 15, Ouagadougou", "telephone": "25 30 00 00",
+             "email": "awa.badini@gmail.com", "latitude": 12.3714, "longitude": -1.5197, "logo": _png()}
+    r = client.put("/centre", json=corps, headers=ha)
+    assert r.status_code == 200, r.text
+    f = r.json()
+    assert f["responsable"] == "Dr OUEDRAOGO Awa" and f["latitude"] == 12.3714 and f["a_logo"] and f["logo"].startswith("data:image/png;base64,")
+    assert client.get("/centre", headers=ha).json()["logo"] == f["logo"]
+    assert "logo" not in client.get("/centres", headers=ha).json()[0]               # jamais de logo dans les listes
+    # le nom, le préfixe et l'état restent au super administrateur
+    client.put("/centre", json={"nom": "Autre nom", "prefixe": "ZZ", "actif": False}, headers=ha)
+    assert client.get("/centre", headers=ha).json()["nom"] == "Centre principal"
+    # retrait du logo
+    assert client.put("/centre", json={"logo": ""}, headers=ha).json()["a_logo"] is False
+
+
+def test_logo_et_geolocalisation_controles(client):
+    ha = entete(client, "adm")
+    assert client.put("/centre", json={"logo": "data:image/png;base64,AAAA"}, headers=ha).status_code == 422          # pas une vraie image
+    assert client.put("/centre", json={"logo": "data:image/gif;base64,R0lGODlhAQABAAAAACw="}, headers=ha).status_code == 422
+    assert client.put("/centre", json={"latitude": 120, "longitude": 0}, headers=ha).status_code == 422
+    assert client.put("/centre", json={"latitude": "abc", "longitude": 0}, headers=ha).status_code == 422
+    gros = _png((2000, 2000))
+    assert client.put("/centre", json={"logo": gros}, headers=ha).status_code in (200, 422)                           # réduit à 480 px si la taille le permet
+    # un logo réduit ne dépasse jamais 480 px
+    import base64, io
+    from PIL import Image
+    f = client.put("/centre", json={"logo": _png((900, 300))}, headers=ha).json()
+    assert max(Image.open(io.BytesIO(base64.b64decode(f["logo"].split(",")[1]))).size) <= 480
+
+
+def test_papier_a_entete_a4_et_a5(client):
+    ha = entete(client, "adm")
+    client.put("/centre", json={"responsable": "Dr OUEDRAOGO Awa", "adresse": "Secteur 15", "latitude": 12.37, "longitude": -1.52, "logo": _png()}, headers=ha)
+    for fmt, (l, h) in (("A4", (595, 842)), ("A5", (420, 595))):
+        r = client.get(f"/centre/papier-entete?format={fmt}", headers=ha)
+        assert r.status_code == 200 and r.content.startswith(b"%PDF") and r.headers["content-disposition"].startswith("inline")
+        assert f"/MediaBox [0 0 {l}".encode() in r.content or b"/MediaBox" in r.content
+    assert client.get("/centre/papier-entete?format=A3", headers=ha).status_code == 422
+    assert client.get("/centre/papier-entete", headers=entete(client, "tec")).status_code == 403
+
+
+def test_la_fiche_d_un_centre_ne_fuit_pas_vers_l_autre(client):
+    b, hb = _centre_b(client)
+    ha = entete(client, "adm")
+    client.put("/centre", json={"responsable": "Dr A", "logo": _png()}, headers=ha)
+    assert client.get("/centre", headers=hb).json()["responsable"] == "" and client.get("/centre", headers=hb).json()["a_logo"] is False
+    hs = entete(client, "sa")
+    assert client.get(f"/centres/{b['id']}", headers=hs).json()["nom"] == "Clinique Pilote"
+    assert client.get(f"/centres/{b['id']}", headers=ha).status_code == 403
+
+
+def test_rapport_pdf_avec_logo_du_centre(client):
+    ha = entete(client, "adm")
+    client.put("/centre", json={"responsable": "Dr OUEDRAOGO Awa", "logo": _png()}, headers=ha)
+    r = client.get("/rapports/pdf?du=2026-11-01&au=2026-11-30", headers=ha)
+    assert r.status_code == 200 and r.content.startswith(b"%PDF") and b"/Image" in r.content          # le logo du centre est dans le PDF

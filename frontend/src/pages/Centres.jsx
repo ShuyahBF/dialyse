@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton, { BoutonIcone } from "../composants/Bouton.jsx";
 import { Pastille, Texte } from "../composants/Champs.jsx";
+import FicheCentre, { corpsFiche } from "../composants/FicheCentre.jsx";
 import Modal from "../composants/Modal.jsx";
 import ThTri from "../composants/ThTri.jsx";
 import { api } from "../lib/api.js";
@@ -23,9 +24,17 @@ export default function Centres() {
   const maj = (k, v) => setModal((m) => ({ ...m, form: { ...m.form, [k]: v } }));
   async function enregistrer() {
     const { mode, centre, form } = modal;
-    if (mode === "creer") await avecToast("Création du centre", () => api("/centres", { methode: "POST", corps: form }), (c) => `Centre « ${c.nom} » créé`);
-    else await avecToast("Enregistrement", () => api(`/centres/${centre.id}`, { methode: "PUT", corps: form }), () => "Centre modifié");
+    if (mode === "creer") await avecToast("Création du centre", () => api("/centres", { methode: "POST", corps: corpsFiche(form) }), (c) => `Centre « ${c.nom} » créé`);
+    else await avecToast("Enregistrement", () => api(`/centres/${centre.id}`, { methode: "PUT", corps: corpsFiche(form) }), () => "Centre modifié");
     setModal(null); await charger();
+  }
+  // La modification charge la fiche COMPLÈTE (le logo n'est jamais dans la liste).
+  async function ouvrirModification(c) {
+    try {
+      const f = await api(`/centres/${c.id}`);
+      setModal({ mode: "modifier", centre: c, form: { nom: f.nom, prefixe: f.prefixe, responsable: f.responsable, titre_responsable: f.titre_responsable, adresse: f.adresse, ville: f.ville,
+        telephone: f.telephone, email: f.email, identifiant_fiscal: f.identifiant_fiscal, latitude: f.latitude ?? "", longitude: f.longitude ?? "", logo: f.logo || "" } });
+    } catch (e) { toast(e.message, "erreur"); }
   }
   async function basculer(c) {
     await avecToast(c.actif ? "Désactivation" : "Activation", () => api(`/centres/${c.id}`, { methode: "PUT", corps: { actif: !c.actif } }), () => (c.actif ? "Centre désactivé : ses comptes n'ont plus accès" : "Centre activé"));
@@ -47,18 +56,18 @@ export default function Centres() {
       <div className="overflow-x-auto rounded-xl bg-white ring-1 ring-encre/10">
         <table className="tableau">
           <thead><tr>
-            <ThTri cle="nom" tri={tri}>Centre</ThTri><ThTri cle="prefixe" tri={tri}>Préfixe</ThTri><ThTri cle="ville" tri={tri}>Ville</ThTri>
+            <ThTri cle="nom" tri={tri}>Centre</ThTri><ThTri cle="prefixe" tri={tri}>Préfixe</ThTri><ThTri cle="ville" tri={tri}>Ville</ThTri><ThTri cle="responsable" tri={tri}>Responsable</ThTri>
             <ThTri cle="telephone" tri={tri}>Téléphone</ThTri><ThTri cle="actif" tri={tri}>État</ThTri><ThTri cle="cree_le" tri={tri}>Créé le</ThTri><th>Actions</th>
           </tr></thead>
           <tbody>
             {affichees.map((c) => (
               <tr key={c.id} onClick={() => setSelection(c.id)} className={selection === c.id ? "ligne-selectionnee" : ""}>
                 <td className="font-medium text-emeraude"><span className="inline-flex items-center gap-2"><Building2 size={16} />{c.nom}</span></td>
-                <td className="font-mono">{c.prefixe}</td><td>{c.ville || "—"}</td><td>{c.telephone || "—"}</td>
+                <td className="font-mono">{c.prefixe}</td><td>{c.ville || "—"}</td><td>{c.responsable || "—"}</td><td>{c.telephone || "—"}</td>
                 <td>{c.actif ? <Pastille couleur="vert" icone={Power}>Actif</Pastille> : <Pastille couleur="rouge" icone={Power}>Désactivé</Pastille>}</td>
                 <td className="tabular-nums">{(c.cree_le || "").slice(0, 10)}</td>
                 <td className="whitespace-nowrap">
-                  <BoutonIcone icone={Pencil} libelle="Modifier le centre" onClick={() => setModal({ mode: "modifier", centre: c, form: { nom: c.nom, prefixe: c.prefixe, ville: c.ville, telephone: c.telephone } })} />
+                  <BoutonIcone icone={Pencil} libelle="Modifier le centre" onClick={() => ouvrirModification(c)} />
                   <BoutonIcone icone={Power} libelle={c.actif ? "Désactiver le centre" : "Activer le centre"} couleur={c.actif ? "text-rose-600" : "text-emerald-600"} onClick={() => basculer(c)} />
                 </td>
               </tr>
@@ -67,13 +76,12 @@ export default function Centres() {
         </table>
       </div>
       {modal && (
-        <Modal titre={modal.mode === "creer" ? "Nouveau centre" : `Modifier ${modal.centre.nom}`} onFermer={() => setModal(null)}
+        <Modal large titre={modal.mode === "creer" ? "Nouveau centre" : `Modifier ${modal.centre.nom}`} onFermer={() => setModal(null)}
           pied={<><Bouton onClick={() => setModal(null)}>Annuler</Bouton><Bouton icone={Save} variante="principal" disabled={!valide} onClick={enregistrer}>Enregistrer</Bouton></>}>
           <Texte libelle="Nom du centre" valeur={modal.form.nom} onChange={(v) => maj("nom", v)} placeholder="Clinique Philadelphie" />
           <Texte libelle="Préfixe des codes patients" valeur={modal.form.prefixe} onChange={(v) => maj("prefixe", v.toUpperCase())} placeholder="CMC" maxLength={6}
             aide="2 à 6 lettres ou chiffres : les patients seront CMC-000001, CMC-000002… (ne change plus après le premier patient)" />
-          <Texte libelle="Ville" valeur={modal.form.ville} onChange={(v) => maj("ville", v)} placeholder="Ouagadougou" />
-          <Texte libelle="Téléphone" valeur={modal.form.telephone} onChange={(v) => maj("telephone", v)} placeholder="25 30 00 00" />
+          <FicheCentre form={modal.form} maj={maj} />
           {modal.mode === "modifier" && <p className="text-xs text-slate-500">« Modifié, non enregistré » : cliquez sur Enregistrer pour valider.</p>}
         </Modal>
       )}

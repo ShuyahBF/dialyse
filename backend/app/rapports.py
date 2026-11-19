@@ -182,7 +182,9 @@ def pdf_rapport(r: dict, clinique: dict) -> bytes:
     fr = lambda d: f"{d[8:]}/{d[5:7]}/{d[:4]}"
     t = r["totaux"]
     n = lambda v, suffixe="": "—" if v is None else f"{v:g}".replace(".", ",") + suffixe
-    el = [Paragraph(clinique.get("nom") or "Clinique de dialyse", titre), Paragraph(f"<b>Rapport d'activité</b> du {fr(r['du'])} au {fr(r['au'])} (regroupement par {r['regroupement']})", st["Heading3"]), Spacer(1, 3 * mm),
+    from .centres import element_logo
+    logo = element_logo(clinique, 14)
+    el = ([logo, Spacer(1, 2 * mm)] if logo else []) + [Paragraph(clinique.get("nom") or "Clinique de dialyse", titre), Paragraph(f"<b>Rapport d'activité</b> du {fr(r['du'])} au {fr(r['au'])} (regroupement par {r['regroupement']})", st["Heading3"]), Spacer(1, 3 * mm),
           tableau(["Indicateur", "Valeur"], [["Séances réalisées", n(t["realisees"])], ["Patients traités", n(t["patients"])], ["Patients absents (séances)", n(t["absents"])],
                                               ["Taux d'absence", n(t["taux_absence_pct"], " %")], ["Séances annulées", n(t["annulees"])], ["Durée moyenne", n(t["duree_moyenne_min"], " min")],
                                               ["Ultrafiltration moyenne", n(t["uf_moyenne_l"], " l")], ["Kt/V moyen", n(t["ktv_moyen"])], ["Kt/V ≥ 1,2", n(t["ktv_conforme_pct"], " %")],
@@ -208,6 +210,7 @@ def pdf(du: str, au: str, regroupement: str = "jour", u: dict = Depends(exiger_r
         validation.erreur("Regroupement : jour, semaine ou mois")
     du, au = _periode(du, au)
     journaliser("rapport_pdf", u, f"{du} → {au}")
-    clinique = db.base().parametres.find_one({"id": "clinique"}) or {}
+    from .centres import entete_courant
+    clinique = entete_courant()
     return Response(pdf_rapport(construire(du, au, regroupement), clinique), media_type="application/pdf",
                     headers={"Content-Disposition": f'inline; filename="rapport_{du}_{au}.pdf"'})
