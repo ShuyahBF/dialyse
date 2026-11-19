@@ -43,8 +43,8 @@ def test_gestion_des_comptes(client):
     admin = next(c for c in comptes if c["login"] == "adm")
     assert client.get("/utilisateurs", headers=hm).status_code == 403
     assert client.put(f"/utilisateurs/{admin['id']}", json={"actif": False}, headers=ha).status_code == 400        # pas son propre compte
-    sa = next(c for c in comptes if c["login"] == "sa")
-    assert client.put(f"/utilisateurs/{sa['id']}", json={"actif": False}, headers=ha).status_code == 403            # pas le super administrateur
+    assert all(c["login"] != "sa" for c in comptes)                                                                  # le compte du groupe n'est pas dans la liste du centre
+    assert client.put("/utilisateurs/id-sa", json={"actif": False}, headers=ha).status_code == 404                  # et un administrateur de centre ne peut pas y toucher
     client.put(f"/utilisateurs/{inf['id']}", json={"actif": False}, headers=ha)
     assert client.post("/auth/login", json={"login": "inf", "mot_de_passe": "Motdepasse1"}).status_code == 401      # compte désactivé
     client.post(f"/utilisateurs/{inf['id']}/reinitialiser", json={"mot_de_passe": "Nouveau1234"}, headers=ha)

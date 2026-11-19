@@ -18,13 +18,20 @@ from app import db, securite  # noqa: E402
 from app.main import app  # noqa: E402
 
 
+CENTRE = "centre-initial"
+
+
 @pytest.fixture()
 def client():
     base = mongomock.MongoClient()["test"]
     db.definir_base(base)
     db.creer_index(base)
+    # Multi-centres : un centre initial ; tous les comptes y sont rattachés, SAUF le super administrateur (compte du groupe, qui choisit son centre par X-Centre).
+    base.centres.insert_one({"id": CENTRE, "nom": "Centre principal", "prefixe": "DIAL", "actif": True})
+    db.fixer_centre(CENTRE)                                  # centre de travail des accès directs à la base dans les tests
     for login, role in [("sa", "super_admin"), ("adm", "admin"), ("med", "medecin"), ("inf", "infirmier"), ("sec", "secretariat"), ("tec", "technicien")]:
         base.utilisateurs.insert_one({"id": "id-" + login, "login": login, "nom_affiche": login, "role": role, "actif": True, "echecs": 0,
+                                      "centre_id": None if role == "super_admin" else CENTRE,
                                       "mot_de_passe_hash": securite.hacher_mot_de_passe("Motdepasse1"), "doit_changer_mdp": False})
     return TestClient(app)
 
@@ -33,7 +40,10 @@ def entete(client, login):
     """En-tête d'authentification pour le compte « login »."""
     r = client.post("/auth/login", json={"login": login, "mot_de_passe": "Motdepasse1"})
     assert r.status_code == 200, r.text
-    return {"Authorization": "Bearer " + r.json()["jeton"]}
+    h = {"Authorization": "Bearer " + r.json()["jeton"]}
+    if login == "sa":
+        h["X-Centre"] = CENTRE                               # le super administrateur travaille dans le centre principal
+    return h
 
 
 def nouveau_patient(client, h, **extra):

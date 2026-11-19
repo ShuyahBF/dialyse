@@ -8,7 +8,7 @@ from conftest import entete, nouveau_patient
 
 def _dg(client):
     db.base().utilisateurs.insert_one({"id": "id-dg", "login": "dg", "nom_affiche": "dg", "role": "direction", "actif": True, "echecs": 0,
-                                       "mot_de_passe_hash": securite.hacher_mot_de_passe("Motdepasse1"), "doit_changer_mdp": False})
+                                       "mot_de_passe_hash": securite.hacher_mot_de_passe("Motdepasse1"), "doit_changer_mdp": False, "centre_id": "centre-initial"})
     return entete(client, "dg")
 
 

@@ -1,6 +1,6 @@
 // Contexte global : utilisateur connecté, version du serveur, toasts (« … en cours » puis résultat) et attente longue.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { api, definirSurSessionExpiree, jeton } from "./api.js";
+import { api, centre as centreStock, definirSurSessionExpiree, jeton } from "./api.js";
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -10,6 +10,10 @@ export function Fournisseur({ children }) {
   const [pret, setPret] = useState(false);
   const [version, setVersion] = useState(null);
   const [toasts, setToasts] = useState([]);
+  // Multi-centres : liste des centres visibles et centre de travail choisi (comptes du groupe seulement ; les autres ont le leur, imposé par le serveur).
+  const [centres, setCentres] = useState([]);
+  const [centreChoisi, setCentreChoisi] = useState(centreStock.lire());
+  const choisirCentre = useCallback((id) => { centreStock.ecrire(id || ""); setCentreChoisi(id || ""); }, []);
 
   /** Affiche un toast (type : info | ok | erreur | attente). Retourne son identifiant ; les toasts « attente » restent jusqu'à retrait. */
   const toast = useCallback((message, type = "info") => {
@@ -38,7 +42,16 @@ export function Fournisseur({ children }) {
     }
   }, [toast, retirer]);
 
-  const deconnecter = useCallback(() => { jeton.ecrire(""); setUtilisateur(null); }, []);
+  const deconnecter = useCallback(() => { jeton.ecrire(""); centreStock.ecrire(""); setCentreChoisi(""); setCentres([]); setUtilisateur(null); }, []);
+
+  // Après connexion : liste des centres ; un compte du groupe sans choix reprend le sien, ou celui du seul centre existant.
+  useEffect(() => {
+    if (!utilisateur) return;
+    api("/centres").then((l) => {
+      setCentres(l);
+      if (utilisateur.groupe && !l.some((c) => c.id === centreStock.lire())) choisirCentre(l.length === 1 ? l[0].id : "");
+    }).catch(() => {});
+  }, [utilisateur, choisirCentre]);
 
   useEffect(() => {
     definirSurSessionExpiree(() => { deconnecter(); toast("Session expirée, reconnectez-vous", "erreur"); });
@@ -47,7 +60,8 @@ export function Fournisseur({ children }) {
     else setPret(true);
   }, [deconnecter, toast]);
 
-  const valeur = useMemo(() => ({ utilisateur, setUtilisateur, pret, version, toast, retirer, avecToast, deconnecter, toasts }),
-    [utilisateur, pret, version, toast, retirer, avecToast, deconnecter, toasts]);
+  const rechargerCentres = useCallback(() => api("/centres").then(setCentres), []);
+  const valeur = useMemo(() => ({ utilisateur, setUtilisateur, pret, version, toast, retirer, avecToast, deconnecter, toasts, centres, centreChoisi, choisirCentre, rechargerCentres }),
+    [utilisateur, pret, version, toast, retirer, avecToast, deconnecter, toasts, centres, centreChoisi, choisirCentre, rechargerCentres]);
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>;
 }

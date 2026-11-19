@@ -51,10 +51,14 @@ def masquer(doc: dict, role: str, modeles: dict | None = None) -> dict:
 
 
 def prochain_code() -> str:
-    """Code patient séquentiel DIAL-000001 (compteur atomique en base)."""
+    """
+    Code patient séquentiel du CENTRE : « <préfixe du centre>-000001 » (ex. DIAL-000001, CMC-000001). Le compteur est atomique et propre à chaque
+    centre (la collection `parametres` est filtrée par centre).
+    """
     from pymongo import ReturnDocument
+    centre = db.brut().centres.find_one({"id": db.centre_courant.get()}) or {}
     c = db.base().parametres.find_one_and_update({"id": "compteur_patients"}, {"$inc": {"n": 1}}, upsert=True, return_document=ReturnDocument.AFTER)
-    return f"DIAL-{int(c['n']):06d}"
+    return f"{centre.get('prefixe') or 'DIAL'}-{int(c['n']):06d}"
 
 
 def _identite(corps: dict, creation: bool) -> dict:

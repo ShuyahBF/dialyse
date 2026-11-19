@@ -30,8 +30,9 @@ from .config import env
 
 routeur = APIRouter()
 
-# Données de travail sauvegardées (les sauvegardes elles-mêmes sont exclues).
-COLLECTIONS = ["utilisateurs", "parametres", "patients", "postes", "seances", "bilans", "articles", "lots", "mouvements",
+# Données de travail sauvegardées (les sauvegardes elles-mêmes sont exclues). La sauvegarde couvre TOUS les centres (base complète, `db.brut()`) :
+# restaurer, télécharger, importer, supprimer restent réservés au super administrateur.
+COLLECTIONS = ["centres", "utilisateurs", "parametres", "patients", "postes", "seances", "bilans", "articles", "lots", "mouvements",
                "tarifs", "organismes", "factures", "historique", "passkeys", "biometries", "journal"]
 NON_RESTAUREES = {"journal"}                  # le journal d'audit actuel est conservé
 MORCEAU = 4 * 1024 * 1024                     # morceaux de 4 Mo (limite de 16 Mo par document MongoDB)
@@ -70,11 +71,11 @@ def dechiffrer(donnees: bytes) -> dict:
 
 def lire_base() -> dict:
     """Contenu actuel de toutes les collections sauvegardées."""
-    return {"version": 1, "date": db.maintenant(), "collections": {c: list(db.base()[c].find({}, {"_id": 0})) for c in COLLECTIONS}}
+    return {"version": 1, "date": db.maintenant(), "collections": {c: list(db.brut()[c].find({}, {"_id": 0})) for c in COLLECTIONS}}
 
 
 def compteurs_base() -> dict:
-    return {c: db.base()[c].count_documents({}) for c in COLLECTIONS}
+    return {c: db.brut()[c].count_documents({}) for c in COLLECTIONS}
 
 
 # ---------- stockage ----------
@@ -156,9 +157,9 @@ def _appliquer(contenu: dict) -> None:
         if c not in contenu.get("collections", {}):          # collection absente d'une ancienne sauvegarde : on ne la vide pas
             continue
         docs = contenu["collections"][c]
-        db.base()[c].delete_many({})
+        db.brut()[c].delete_many({})
         if docs:
-            db.base()[c].insert_many([dict(d) for d in docs])
+            db.brut()[c].insert_many([dict(d) for d in docs])
 
 
 def restaurer(ident: str, acteur: dict) -> dict:
@@ -170,8 +171,10 @@ def restaurer(ident: str, acteur: dict) -> dict:
     secours = creer("avant_restauration", acteur["login"])        # copie de sécurité de l'état ACTUEL (vérifiée)
     try:
         _appliquer(contenu)
+        from .centres import amorcer_centre_initial
+        amorcer_centre_initial()                                   # sauvegarde d'AVANT le multi-centres : ses données sont rattachées au centre initial
         attendu = {c: n for c, n in f["compteurs"].items() if c not in NON_RESTAUREES}
-        obtenu = {c: n for c, n in compteurs_base().items() if c not in NON_RESTAUREES}
+        obtenu = {c: n for c, n in compteurs_base().items() if c in attendu}   # une ancienne sauvegarde n'a pas de collection « centres »
         if attendu != obtenu:
             raise RuntimeError("écart de compteurs après restauration")
     except Exception as e:

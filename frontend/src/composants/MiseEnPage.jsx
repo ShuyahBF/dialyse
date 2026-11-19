@@ -1,6 +1,6 @@
 // Cadre du portail (présentation ZandGo) : barre latérale bleu nuit de 230 px (logo, menus à pictogrammes, élément actif en orange,
 // nom + rôle en pastille, déconnexion, version), menu replié derrière un bouton « Menu » sur téléphone. Majuscule à chaque mot (règle 18).
-import { BarChart3, CalendarDays, ClipboardList, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
+import { Building2, BarChart3, CalendarDays, ClipboardList, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useApp } from "../lib/contexte.jsx";
@@ -20,6 +20,7 @@ const MENU = [
   { chemin: "/postes", libelle: "postes de dialyse", icone: Monitor, roles: [] },
   { chemin: "/stock", libelle: "consommables et stocks", icone: Package, roles: ["super_admin", "admin", "medecin", "infirmier", "technicien"] },
   { chemin: "/facturation", libelle: "facturation", icone: Receipt, roles: ["super_admin", "admin", "secretariat"] },
+  { chemin: "/centres", libelle: "centres de dialyse", icone: Building2, roles: ["super_admin"] },
   { chemin: "/utilisateurs", libelle: "gestion des comptes", icone: UserCog, roles: ["super_admin", "admin"] },
   { chemin: "/journal", libelle: "journal d'audit", icone: ClipboardList, roles: ["super_admin", "admin"] },
   { chemin: "/sauvegardes", libelle: "sauvegardes chiffrées", icone: DatabaseBackup, roles: ["super_admin", "admin"] },
@@ -27,11 +28,15 @@ const MENU = [
 ];
 
 export default function MiseEnPage() {
-  const { utilisateur, deconnecter } = useApp();
+  const { utilisateur, deconnecter, centres, centreChoisi, choisirCentre } = useApp();
   const { pathname } = useLocation();
   const [ouvert, setOuvert] = useState(false);            // menu replié sur téléphone, refermé après chaque choix
   useEffect(() => setOuvert(false), [pathname]);
   const entrees = MENU.filter((m) => m.roles.length === 0 || m.roles.includes(utilisateur.role));
+  // Compte du groupe (super administrateur, direction) sans centre choisi : seules les pages « Centres », « Comptes » et « Mon compte » fonctionnent.
+  const sansCentre = utilisateur.groupe && !centreChoisi;
+  const pageLibre = ["/centres", "/utilisateurs", "/sauvegardes", "/compte"].some((p) => pathname.startsWith(p));
+  const nomCentre = utilisateur.groupe ? (centres.find((c) => c.id === centreChoisi)?.nom || "") : utilisateur.centre_nom;
   return (
     <ProtectionEcran>
       <div className="min-h-screen overflow-x-clip md:grid md:grid-cols-[230px_1fr]">
@@ -51,6 +56,17 @@ export default function MiseEnPage() {
               </NavLink>
             ))}
           </nav>
+          {/* Centre de travail : imposé pour un compte de centre, à choisir (liste déroulante, règle 10) pour un compte du groupe */}
+          <div className={`${ouvert ? "block" : "hidden"} mt-4 px-2 md:block`}>
+            <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50"><Building2 size={13} /> Centre</p>
+            {utilisateur.groupe ? (
+              <select value={centreChoisi} onChange={(e) => choisirCentre(e.target.value)} aria-label="Centre de travail" data-testid="selecteur-centre"
+                className="w-full rounded-lg bg-white/10 px-2 py-1.5 text-sm font-semibold text-white ring-1 ring-white/20 focus:outline-none">
+                <option value="" className="text-encre">— Choisir un centre —</option>
+                {centres.filter((c) => c.actif).map((c) => <option key={c.id} value={c.id} className="text-encre">{c.nom}</option>)}
+              </select>
+            ) : <p className="text-sm font-semibold text-white/85" data-testid="nom-centre">{nomCentre}</p>}
+          </div>
           <div className={`${ouvert ? "block" : "hidden"} mt-auto space-y-2 px-2 pt-6 text-xs text-white/60 md:block`}>
             <p className="truncate font-semibold text-white/85">{utilisateur.nom}</p>
             <span className="inline-block rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-citron">{utilisateur.role_libelle}</span>
@@ -58,8 +74,15 @@ export default function MiseEnPage() {
             <BandeauVersion className="!text-white/50" />
           </div>
         </aside>
-        <main className="min-w-0 p-4 sm:p-6 lg:p-8">
-          <Outlet />
+        {/* key = centre : changer de centre recharge entièrement la page affichée (aucune donnée de l'ancien centre ne reste à l'écran) */}
+        <main key={centreChoisi || "aucun"} className="min-w-0 p-4 sm:p-6 lg:p-8">
+          {sansCentre && !pageLibre ? (
+            <div className="mx-auto mt-10 max-w-md rounded-2xl bg-white p-6 text-center ring-1 ring-encre/5">
+              <Building2 size={40} className="mx-auto text-citron" />
+              <h1 className="mt-3 text-xl font-semibold">Choisissez un centre</h1>
+              <p className="mt-2 text-sm text-ardoise">Votre compte couvre plusieurs centres : choisissez celui où vous travaillez dans la liste « Centre » de la barre latérale.</p>
+            </div>
+          ) : <Outlet />}
         </main>
       </div>
     </ProtectionEcran>
