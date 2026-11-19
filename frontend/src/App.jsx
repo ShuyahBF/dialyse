@@ -6,6 +6,7 @@ import { useApp } from "./lib/contexte.jsx";
 import Centres from "./pages/Centres.jsx";
 import FicheCentrePage from "./pages/FicheCentre.jsx";
 import SyntheseGroupe from "./pages/SyntheseGroupe.jsx";
+import Aujourdhui from "./pages/Aujourdhui.jsx";
 import Calendrier from "./pages/Calendrier.jsx";
 import Messagerie from "./pages/Messagerie.jsx";
 import Reservations from "./pages/Reservations.jsx";
@@ -29,7 +30,7 @@ export default function App() {
   const { utilisateur, pret } = useApp();
   if (!pret) return <div className="min-h-dvh flex items-center justify-center"><span className="jauge" /></div>;
   const role = utilisateur?.role;
-  const accueil = ["secretariat"].includes(role) ? "/planning" : role === "technicien" ? "/postes" : "/";
+  const accueil = ["secretariat"].includes(role) ? "/aujourdhui" : role === "technicien" ? "/postes" : "/";
   return (
     <>
       {!utilisateur ? (
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="sauvegardes" element={<Sauvegardes />} />
             <Route path="stock" element={<Stock />} />
             <Route path="fiche-centre" element={<FicheCentrePage />} />
+            <Route path="aujourdhui" element={<Aujourdhui />} />
             <Route path="calendrier" element={<Calendrier />} />
             <Route path="reservations" element={<Reservations />} />
             <Route path="messagerie" element={<Messagerie />} />
