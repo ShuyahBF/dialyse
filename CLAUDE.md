@@ -110,4 +110,4 @@ Rappel des principales :
 - Écran : `composants/FicheCentre.jsx` (logo avec aperçu, géolocalisation « Utiliser ma position » + lien carte OpenStreetMap), `pages/FicheCentre.jsx`. Tests : `backend/tests/test_multi_centres.py`.
 
 ## Nom de domaine (propriétaire, 19/11/2026)
-- Site : `https://looisdialyse.space` ; API : `https://api.looisdialyse.space` (déclarés dans `render.yaml`, `domains`). Les anciennes adresses onrender.com ne sont plus utilisées. Aucune clé d'accès n'existait : on repart de zéro (`FRONTEND_ORIGIN` = `https://looisdialyse.space`).
+- Site : `https://looisdialyse.cloud` ; API : `https://api.looisdialyse.cloud` (déclarés dans `render.yaml`, `domains`). Les anciennes adresses onrender.com ne sont plus utilisées. Aucune clé d'accès n'existait : on repart de zéro (`FRONTEND_ORIGIN` = `https://looisdialyse.cloud`).

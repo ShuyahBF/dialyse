@@ -5,7 +5,7 @@ services:
     name: dialyse-api
     # Nom de domaine de l'API (à relier chez le registraire par l'enregistrement DNS que Render indique)
     domains:
-      - api.looisdialyse.space
+      - api.looisdialyse.cloud
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
@@ -36,21 +36,21 @@ services:
         value: dialyse
       - key: LILUVINE_WA_HMAC
         sync: false
-      # Adresse du site web ci-dessous (autorise ses appels à l'API), https://looisdialyse.space
+      # Adresse du site web ci-dessous (autorise ses appels à l'API), https://looisdialyse.cloud
       - key: FRONTEND_ORIGIN
         sync: false
 
   - type: web
     name: dialyse-web
     domains:
-      - looisdialyse.space
-      - www.looisdialyse.space
+      - looisdialyse.cloud
+      - www.looisdialyse.cloud
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
-      # Adresse du serveur ci-dessus (sans « / » final), https://api.looisdialyse.space
+      # Adresse du serveur ci-dessus (sans « / » final), https://api.looisdialyse.cloud
       - key: VITE_API_URL
         sync: false
     routes:
