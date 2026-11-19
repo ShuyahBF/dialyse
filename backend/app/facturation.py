@@ -353,8 +353,11 @@ def pdf_facture(f: dict, clinique: dict) -> bytes:
     droite = ParagraphStyle("droite", parent=st["Normal"], alignment=2)
     titre = ParagraphStyle("titre", parent=st["Title"], textColor=colors.HexColor("#0A1E3D"), alignment=0)
     p = f["paiements"]
-    elements = [Paragraph(clinique.get("nom") or "Clinique de dialyse", titre),
-                Paragraph(" · ".join(x for x in (clinique.get("adresse"), clinique.get("telephone"), clinique.get("identifiant_fiscal")) if x), st["Normal"]), Spacer(1, 6 * mm),
+    from .centres import element_logo
+    logo = element_logo(clinique)
+    elements = ([logo, Spacer(1, 2 * mm)] if logo else []) + [Paragraph(clinique.get("nom") or "Clinique de dialyse", titre),
+                Paragraph(" · ".join(x for x in (clinique.get("adresse"), clinique.get("telephone"), clinique.get("identifiant_fiscal")) if x), st["Normal"]),
+                *([Paragraph(f"{clinique.get('titre_responsable') or 'Responsable'} : {clinique['responsable']}", st["Normal"])] if clinique.get("responsable") else []), Spacer(1, 6 * mm),
                 Paragraph(f"<b>FACTURE {f['numero']}</b> — séance du {f['date'][8:]}/{f['date'][5:7]}/{f['date'][:4]}" + (" — <font color='red'>ANNULÉE</font>" if f.get("annulee") else ""), st["Heading3"]),
                 Paragraph(f"Patient : <b>{f['patient_nom']}</b> ({f['patient_code']})", st["Normal"])]
     if f["organisme_nom"]:
@@ -384,6 +387,7 @@ def pdf_facture(f: dict, clinique: dict) -> bytes:
 def pdf(fid: str, u: dict = Depends(exiger_roles(roles.FACTURATION))):
     """PDF de la facture servi en « inline » (affiché dans le lecteur de l'application, jamais téléchargé)."""
     f = _facture(fid)
-    clinique = db.base().parametres.find_one({"id": "clinique"}) or {}
+    from .centres import entete_courant
+    clinique = entete_courant()                        # fiche du centre (logo, responsable…), complétée par l'ancien en-tête des factures
     journaliser("facture_pdf", u, f["numero"])
     return Response(pdf_facture(f, clinique), media_type="application/pdf", headers={"Content-Disposition": f'inline; filename="{f["numero"]}.pdf"'})

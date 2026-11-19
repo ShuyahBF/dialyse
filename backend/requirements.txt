@@ -5,3 +5,4 @@ PyJWT==2.10.1
 cryptography==44.0.3        # chiffrement des sauvegardes ; version exigée par webauthn >= 44.0.2
 webauthn==2.5.2            # clés d'accès (empreinte, visage ou code de l'appareil) sur le site
 reportlab==4.2.5
+pillow==11.1.0           # logo des centres : vérification et réduction de l'image (déjà exigée par reportlab)
