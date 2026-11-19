@@ -9,7 +9,7 @@ import time
 
 from fastapi import APIRouter, Depends
 
-from . import anonyme, aujourdhui, db, roles
+from . import anonyme, aujourdhui, db, eau, maintenance, personnel, roles
 from .auth import utilisateur_courant
 from .messagerie import MESSAGERIE
 from .stock import statut_stock
@@ -42,6 +42,12 @@ def compteurs(u: dict = Depends(utilisateur_courant)) -> dict:
         res["/reservations"] = b.wa_demandes.count_documents({"statut": "nouvelle"}) + b.reservations.count_documents({"statut": "demandee"})
     if r in roles.LECTURE_SEANCE:
         res["/aujourdhui"] = aujourdhui.nombre_en_retard()          # séances en retard à démarrer
+    if r in personnel.GESTION:
+        res["/personnel"] = _en_cache("personnel", personnel.creneaux_sous_dotes)       # créneaux des 7 prochains jours sans assez de soignants ou sans médecin
+    if r in maintenance.LECTURE:
+        res["/maintenance"] = maintenance.a_traiter()                                  # interventions à démarrer (date arrivée ou dépassée)
+    if r in eau.LECTURE:
+        res["/eau"] = _en_cache("eau", eau.a_traiter)                                  # contrôles de l'eau manquants + relevés non traités
     if r in anonyme.ROLES_SUIVI:
         res["/suivi"] = _en_cache("alertes", lambda: anonyme.construire()["critiques"])
     if r in roles.LECTURE_STOCK:

@@ -5,6 +5,6 @@ SOURCE UNIQUE de la version et du lot du serveur (règles du propriétaire n° 1
 Modifier ce fichier force aussi le redéploiement sur Render (le service a un rootDir « backend »).
 La date de déploiement est celle du démarrage du serveur (voir main.py).
 """
-VERSION = "1.18"
-LOT = "20"
-LOT_LIBELLE = "Tableau de bord Aujourd'hui : état des dialyses en direct poste par poste (progression, temps restant, retards, fins proches, patients empêchés), relu toutes les 30 secondes."
+VERSION = "1.19"
+LOT = "21"
+LOT_LIBELLE = "Planning du personnel (couverture des séances), maintenance des postes, contrôle de l'eau de dialyse et rentabilité du centre (marge, coût par séance, seuil de rentabilité)."

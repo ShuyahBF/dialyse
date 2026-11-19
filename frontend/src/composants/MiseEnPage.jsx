@@ -1,6 +1,6 @@
 // Cadre du portail (présentation ZandGo) : barre latérale bleu nuit de 230 px (logo, menus à pictogrammes, élément actif en orange,
 // nom + rôle en pastille, déconnexion, version), menu replié derrière un bouton « Menu » sur téléphone. Majuscule à chaque mot (règle 18).
-import { Activity, Building2, BarChart3, CalendarDays, CalendarRange, ClipboardList, MessageCircle, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
+import { Activity, Building2, Droplets, TrendingUp, Users as UsersEquipe, Wrench, BarChart3, CalendarDays, CalendarRange, ClipboardList, MessageCircle, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
@@ -23,6 +23,10 @@ const MENU = [
   { chemin: "/planning", libelle: "planning des séances", icone: CalendarDays, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/patients", libelle: "patients", icone: Users, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/modeles", libelle: "modèles de dossier d'adhésion", icone: ClipboardCheck, roles: ["super_admin", "admin"] },
+  { chemin: "/personnel", libelle: "planning du personnel", icone: UsersEquipe, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat", "direction", "technicien"] },
+  { chemin: "/maintenance", libelle: "maintenance des postes", icone: Wrench, roles: ["super_admin", "admin", "technicien", "medecin", "infirmier", "secretariat", "direction"] },
+  { chemin: "/eau", libelle: "contrôle de l'eau", icone: Droplets, roles: ["super_admin", "admin", "technicien", "medecin", "infirmier"] },
+  { chemin: "/rentabilite", libelle: "rentabilité", icone: TrendingUp, roles: ["super_admin", "admin", "direction"] },
   { chemin: "/postes", libelle: "postes de dialyse", icone: Monitor, roles: [] },
   { chemin: "/stock", libelle: "consommables et stocks", icone: Package, roles: ["super_admin", "admin", "medecin", "infirmier", "technicien"] },
   { chemin: "/facturation", libelle: "facturation", icone: Receipt, roles: ["super_admin", "admin", "secretariat"] },

@@ -24,6 +24,10 @@ from .groupe import routeur as routeur_groupe
 from .messagerie import routeur as routeur_messagerie
 from .activite import routeur as routeur_activite
 from .aujourdhui import routeur as routeur_aujourdhui
+from .eau import routeur as routeur_eau
+from .maintenance import routeur as routeur_maintenance
+from .personnel import routeur as routeur_personnel
+from .rentabilite import routeur as routeur_rentabilite
 from .notifications import routeur as routeur_notifications
 from .historique import routeur as routeur_historique
 from .patients import routeur as routeur_patients
@@ -49,7 +53,7 @@ app = FastAPI(title="Dialyse", version=lot.VERSION, lifespan=cycle_de_vie)
 # CORS : seul le site web de la clinique (FRONTEND_ORIGIN) peut appeler l'API depuis un navigateur.
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in env("FRONTEND_ORIGIN").split(",") if o.strip()],
                    allow_methods=["*"], allow_headers=["*"])
-for _r in (routeur_aujourdhui, routeur_activite, routeur_notifications, routeur_messagerie, routeur_groupe, routeur_centres, routeur_utilisateurs, routeur_acces, routeur_adhesion, routeur_anonyme, routeur_passkeys, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_sauvegardes, routeur_tableau, routeur_historique):
+for _r in (routeur_eau, routeur_maintenance, routeur_personnel, routeur_rentabilite, routeur_aujourdhui, routeur_activite, routeur_notifications, routeur_messagerie, routeur_groupe, routeur_centres, routeur_utilisateurs, routeur_acces, routeur_adhesion, routeur_anonyme, routeur_passkeys, routeur_2fa, routeur_patients, routeur_postes, routeur_seances, routeur_bilans, routeur_stock, routeur_facturation, routeur_rapports, routeur_sauvegardes, routeur_tableau, routeur_historique):
     app.include_router(_r)
 
 

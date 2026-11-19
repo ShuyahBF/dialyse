@@ -33,7 +33,7 @@ routeur = APIRouter()
 # Données de travail sauvegardées (les sauvegardes elles-mêmes sont exclues). La sauvegarde couvre TOUS les centres (base complète, `db.brut()`) :
 # restaurer, télécharger, importer, supprimer restent réservés au super administrateur.
 COLLECTIONS = ["centres", "utilisateurs", "parametres", "patients", "postes", "seances", "bilans", "articles", "lots", "mouvements",
-               "tarifs", "organismes", "factures", "historique", "contacts", "wa_messages", "wa_modeles", "wa_demandes", "reservations", "liste_attente", "passkeys", "biometries", "journal"]
+               "tarifs", "organismes", "factures", "historique", "contacts", "wa_messages", "wa_modeles", "wa_demandes", "reservations", "liste_attente", "personnel", "affectations", "interventions", "controles_eau", "charges", "passkeys", "biometries", "journal"]
 NON_RESTAUREES = {"journal"}                  # le journal d'audit actuel est conservé
 MORCEAU = 4 * 1024 * 1024                     # morceaux de 4 Mo (limite de 16 Mo par document MongoDB)
 CONSERVER = {"auto": 14, "manuelle": 10, "avant_restauration": 3, "importee": 5}
