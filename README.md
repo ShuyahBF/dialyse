@@ -13,6 +13,9 @@ comptes à rôles, journal d'audit, double authentification, données sensibles 
   **validation et verrouillage par le médecin**. Alertes cliniques calculées (hypotension, prise de poids, Kt/V insuffisant, UF rapide…).
 - **Tableau de bord**, **journal d'audit** (chaque ouverture d'un dossier est tracée), **gestion des comptes**, double authentification.
 
+## Nom de domaine
+Site : `https://looisdialyse.cloud` · API : `https://api.looisdialyse.cloud` (déclarés dans `render.yaml`, `domains`). Les anciennes adresses onrender.com ne sont plus utilisées. `FRONTEND_ORIGIN` = `https://looisdialyse.cloud`.
+
 ## Multi-centres
 Plusieurs centres de dialyse sur la même plateforme, sur le modèle d'e-Kol : chaque centre a ses patients, postes, séances, bilans, stocks, factures et comptes. Le super administrateur crée les centres
 (« Centres De Dialyse ») puis l'administrateur de chaque centre (« Gestion Des Comptes »). Les comptes d'un centre ne voient jamais un autre centre ; le super administrateur et le directeur général choisissent le centre dans la barre latérale.

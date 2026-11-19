@@ -1,6 +1,6 @@
 // Cadre du portail (présentation ZandGo) : barre latérale bleu nuit de 230 px (logo, menus à pictogrammes, élément actif en orange,
 // nom + rôle en pastille, déconnexion, version), menu replié derrière un bouton « Menu » sur téléphone. Majuscule à chaque mot (règle 18).
-import { Building2, BarChart3, CalendarDays, CalendarRange, ClipboardList, MessageCircle, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
+import { Activity, Building2, BarChart3, CalendarDays, CalendarRange, ClipboardList, MessageCircle, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
@@ -16,6 +16,7 @@ const MENU = [
   { chemin: "/suivi", libelle: "suivi anonymisé", icone: ShieldAlert, roles: ["super_admin", "admin", "direction", "medecin"] },
   { chemin: "/groupe", libelle: "synthèse des centres", icone: BarChart3, roles: ["super_admin", "direction"], groupe: true },
   { chemin: "/rapports", libelle: "rapports", icone: BarChart3, roles: ["super_admin", "admin", "direction", "medecin", "infirmier"] },
+  { chemin: "/aujourdhui", libelle: "aujourd'hui", icone: Activity, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/calendrier", libelle: "calendrier d'activité", icone: CalendarRange, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/reservations", libelle: "réservations", icone: ClipboardCheck, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/messagerie", libelle: "centre de messagerie wa", icone: MessageCircle, roles: ["super_admin", "admin", "secretariat"] },
