@@ -13,6 +13,9 @@ export function Fournisseur({ children }) {
   // Multi-centres : liste des centres visibles et centre de travail choisi (comptes du groupe seulement ; les autres ont le leur, imposé par le serveur).
   const [centres, setCentres] = useState([]);
   const [centreChoisi, setCentreChoisi] = useState(centreStock.lire());
+  // Pastilles de notifications du menu (nombre d'éléments non traités par lien) : relues toutes les 30 s et à chaque action qui les change.
+  const [compteurs, setCompteurs] = useState({});
+  const rafraichirCompteurs = useCallback(() => api("/notifications/compteurs").then(setCompteurs).catch(() => {}), []);
   const choisirCentre = useCallback((id) => { centreStock.ecrire(id || ""); setCentreChoisi(id || ""); }, []);
 
   /** Affiche un toast (type : info | ok | erreur | attente). Retourne son identifiant ; les toasts « attente » restent jusqu'à retrait. */
@@ -60,8 +63,14 @@ export function Fournisseur({ children }) {
     else setPret(true);
   }, [deconnecter, toast]);
 
+  useEffect(() => {
+    if (!utilisateur) { setCompteurs({}); return undefined; }
+    rafraichirCompteurs();
+    const t = setInterval(rafraichirCompteurs, 30000);
+    return () => clearInterval(t);
+  }, [utilisateur, centreChoisi, rafraichirCompteurs]);
   const rechargerCentres = useCallback(() => api("/centres").then(setCentres), []);
-  const valeur = useMemo(() => ({ utilisateur, setUtilisateur, pret, version, toast, retirer, avecToast, deconnecter, toasts, centres, centreChoisi, choisirCentre, rechargerCentres }),
-    [utilisateur, pret, version, toast, retirer, avecToast, deconnecter, toasts, centres, centreChoisi, choisirCentre, rechargerCentres]);
+  const valeur = useMemo(() => ({ utilisateur, setUtilisateur, pret, version, toast, retirer, avecToast, deconnecter, toasts, centres, centreChoisi, choisirCentre, rechargerCentres, compteurs, rafraichirCompteurs }),
+    [utilisateur, pret, version, toast, retirer, avecToast, deconnecter, toasts, centres, centreChoisi, choisirCentre, rechargerCentres, compteurs, rafraichirCompteurs]);
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>;
 }

@@ -1,6 +1,6 @@
 // Patients : liste triable avec recherche, création, et DOSSIER en fenêtre modale (règle 20) à onglets :
 // Identité · Médical · Prescription · Accès vasculaires · Séances. Les onglets médicaux n'existent pas pour le secrétariat.
-import { AlertTriangle, CheckCircle2, ClipboardCheck, FolderOpen, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardCheck, FolderOpen, Plus, RefreshCw, Save, Search, Send, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Bilans from "../composants/Bilans.jsx";
 import Bouton, { BoutonIcone } from "../composants/Bouton.jsx";
@@ -212,8 +212,34 @@ function OngletSeances({ p }) {
   );
 }
 
+// Transfert d'un patient vers un autre centre (super administrateur) : centre d'arrivée, motif, CONSENTEMENT du patient obligatoire.
+const MOTIFS = ["Déménagement du patient", "Demande du patient", "Raison médicale", "Rapprochement familial", "Autre"];
+function TransfertPatient({ p, onFermer, onFait }) {
+  const { centres, centreChoisi, avecToast } = useApp();
+  const [f, setF] = useState({ centre: "", motif: "", precision: "", consentement: false });
+  const arrivees = centres.filter((c) => c.actif && c.id !== centreChoisi);
+  const valide = f.centre && f.motif && f.consentement;
+  async function transferer() {
+    const r = await avecToast("Transfert du dossier", () => api(`/patients/${p.id}/transfert`, { methode: "POST",
+      corps: { centre_destination_id: f.centre, motif: f.motif, precision: f.precision, consentement: f.consentement } }),
+      (r) => `Dossier transféré : ${r.code_arrivee} à ${r.centre_arrivee} (${r.bilans_copies} bilan(s) copié(s), ${r.seances_annulees} séance(s) annulée(s))`);
+    onFait(r);
+  }
+  return (
+    <Modal titre={`Transférer ${p.nom} ${p.prenom}`} onFermer={onFermer} pied={<><Bouton onClick={onFermer}>Annuler</Bouton><Bouton variante="orange" icone={Send} disabled={!valide} onClick={transferer}>Transférer le dossier</Bouton></>}>
+      <p className="mb-3 text-sm text-ardoise">Le dossier (identité, dossier médical, prescription, accès vasculaires, pièces, bilans) est COPIÉ dans le centre d'arrivée avec un nouveau code. Ici, le patient passe « Transféré » et ses séances à venir sont annulées ; l'historique des séances et des factures reste dans ce centre.</p>
+      <Liste libelle="Centre d'arrivée" valeur={f.centre} onChange={(v) => setF({ ...f, centre: v })} options={arrivees.map((c) => ({ valeur: c.id, libelle: c.nom }))} />
+      <Liste libelle="Motif" valeur={f.motif} onChange={(v) => setF({ ...f, motif: v })} options={MOTIFS} />
+      <Texte libelle="Précision (facultatif)" valeur={f.precision} onChange={(v) => setF({ ...f, precision: v })} />
+      <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-4 w-4 accent-emeraude" checked={f.consentement} onChange={(e) => setF({ ...f, consentement: e.target.checked })} />
+        Le patient a donné son consentement au transfert de son dossier vers ce centre.</label>
+    </Modal>
+  );
+}
+
 function Dossier({ id, onFermer, onChange }) {
   const { utilisateur, avecToast, toast } = useApp();
+  const [transfert, setTransfert] = useState(false);
   const listes = useListes();
   const [p, setP] = useState(null);
   const [onglet, setOnglet] = useState("identite");
@@ -246,7 +272,12 @@ function Dossier({ id, onFermer, onChange }) {
   const peutPrescrire = ["medecin", "admin", "super_admin"].includes(utilisateur.role);
   const onglets = [["identite", "Identité"], ["pieces", "Pièces du dossier"], ...(medical ? [["medical", "Médical"], ["prescription", "Prescription"], ["acces", "Accès vasculaires"], ["bilans", "Bilans"], ["seances", "Séances"]] : [])];
   return (
-    <Modal titre={`${p.nom} ${p.prenom} — ${p.code}`} large onFermer={onFermer} pied={<Bouton onClick={onFermer}>Fermer</Bouton>}>
+    <Modal titre={`${p.nom} ${p.prenom} — ${p.code}`} large onFermer={onFermer} pied={<>
+      {utilisateur.role === "super_admin" && !["transfere", "decede"].includes(p.statut) && <Bouton icone={Send} onClick={() => setTransfert(true)}>Transférer vers un autre centre</Bouton>}
+      <Bouton onClick={onFermer}>Fermer</Bouton></>}>
+      {transfert && <TransfertPatient p={p} onFermer={() => setTransfert(false)} onFait={() => { setTransfert(false); onChange(); onFermer(); }} />}
+      {p.transfere_vers && <p className="mb-3 rounded-lg bg-orange-50 p-2 text-sm text-orange-900">Transféré à {p.transfere_vers.centre_nom} ({p.transfere_vers.code}) le {String(p.transfere_vers.le).slice(0, 10)}.</p>}
+      {p.transfere_de && <p className="mb-3 rounded-lg bg-sky-50 p-2 text-sm text-sky-900">Arrivé de {p.transfere_de.centre_nom} (ancien code {p.transfere_de.code}).</p>}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <Pastille couleur={COULEUR_STATUT[p.statut]}>{p.statut_libelle}</Pastille>
         <span className="text-sm text-slate-600">{p.age != null && `${p.age} ans`}{p.poids_sec ? ` · poids sec ${nb(p.poids_sec)} kg` : ""}</span>
