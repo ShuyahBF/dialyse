@@ -44,6 +44,16 @@ def statut_peremption(peremption: str, aujourdhui: date | None = None) -> str:
     return "bientot" if peremption <= (ref + timedelta(days=JOURS_PEREMPTION_PROCHE)).isoformat() else "ok"
 
 
+CHAMPS_PRIX = ("cout_unitaire", "valeur", "sans_prix")           # valorisation du stock : vue de l'ADMINISTRATION seule (comme le coût d'un salarié)
+
+
+def _masquer_prix(doc: dict, u: dict) -> dict:
+    """Retire les prix d'un lot ou d'un mouvement pour tout compte autre que l'administration (le serveur masque, l'écran ne fait que montrer)."""
+    if u["role"] in (roles.ADMIN, roles.SUPER_ADMIN):
+        return doc
+    return {k: v for k, v in doc.items() if k not in CHAMPS_PRIX}
+
+
 def _article(aid: str) -> dict:
     a = db.base().articles.find_one({"id": aid})
     if not a:
@@ -86,6 +96,13 @@ def _prelever(aid: str, quantite: float, numero_lot: str = "", inclure_perimes: 
 def _mouvement(a: dict, type_: str, delta: float, u: dict, **extra) -> dict:
     m = {"id": str(uuid.uuid4()), "article_id": a["id"], "article": a["nom"], "type": type_, "delta": delta, "quand": db.maintenant(),
          "date": extra.pop("date", "") or db.maintenant()[:10], "par": u.get("login", ""), **extra}
+    if type_ in ("sortie", "perte"):
+        # VALORISATION (lot 27) : valeur = quantité x prix unitaire du lot (FCFA entiers) ; `sans_prix` = quantité sortie d'un lot dont le prix est inconnu
+        # Le prix est relu sur le LOT (jamais copié dans la liste des lots utilisés : les soignants voient ces lots, pas les prix).
+        lots_pris = m.get("lots") or []
+        prix = {l["numero"]: l.get("cout_unitaire") for l in db.base().lots.find({"article_id": a["id"], "numero": {"$in": [x["numero"] for x in lots_pris]}})}
+        m["valeur"] = int(round(sum(l["quantite"] * (prix.get(l["numero"]) or 0) for l in lots_pris)))
+        m["sans_prix"] = sum(l["quantite"] for l in lots_pris if prix.get(l["numero"]) is None)
     db.base().mouvements.insert_one(m)
     return m
 
@@ -199,19 +216,27 @@ def entree(corps: dict, u: dict = Depends(exiger_roles(roles.ECRITURE_STOCK))):
         validation.erreur("Quantité : champ obligatoire")
     numero = validation.texte(corps, "lot", "Numéro de lot", True, 60)
     per = validation.date_iso(corps, "peremption", "Péremption")
+    # Prix unitaire d'achat du lot en FCFA (facultatif : sans lui, les sorties de ce lot ne sont pas valorisées dans la rentabilité)
+    cout = validation.nombre(corps, "cout_unitaire", "Prix unitaire (FCFA)", 0, 1000000000)
+    cout = None if cout is None else int(round(cout))
     lot = db.base().lots.find_one({"article_id": a["id"], "numero": numero})
     if lot:
         if per and lot.get("peremption") and per != lot["peremption"]:
             raise HTTPException(409, "Ce numéro de lot existe déjà avec une autre date de péremption")
-        db.base().lots.update_one({"id": lot["id"]}, {"$set": {"quantite_restante": lot["quantite_restante"] + q, "peremption": lot.get("peremption") or per}})
+        if cout is not None and lot.get("cout_unitaire") not in (None, cout):
+            raise HTTPException(409, "Ce numéro de lot existe déjà avec un autre prix unitaire")
+        maj = {"quantite_restante": lot["quantite_restante"] + q, "peremption": lot.get("peremption") or per}
+        if cout is not None:
+            maj["cout_unitaire"] = cout
+        db.base().lots.update_one({"id": lot["id"]}, {"$set": maj})
     else:
         db.base().lots.insert_one({"id": str(uuid.uuid4()), "article_id": a["id"], "numero": numero, "peremption": per, "quantite_restante": q,
-                                   "recu_le": db.maintenant()[:10]})
+                                   "recu_le": db.maintenant()[:10], "cout_unitaire": cout})
     _recalculer(a["id"])
     m = _mouvement(a, "entree", q, u, lots=[{"numero": numero, "quantite": q}], fournisseur=validation.texte(corps, "fournisseur", "Fournisseur", False, 100),
                    motif="Réception", date=validation.date_iso(corps, "date", "Date de réception", False, futur_ok=False))
     journaliser("stock_entree", u, f"{a['code']} +{q:g} lot {numero}")
-    return {k: v for k, v in m.items() if k != "_id"}
+    return _masquer_prix({k: v for k, v in m.items() if k != "_id"}, u)
 
 
 @routeur.post("/stock/sorties")
@@ -227,7 +252,7 @@ def sortie(corps: dict, u: dict = Depends(exiger_roles(roles.ECRITURE_STOCK))):
     _recalculer(a["id"])
     m = _mouvement(a, type_, -q, u, motif=motif or "Sortie", lots=lots)
     journaliser("stock_" + type_, u, f"{a['code']} -{q:g}")
-    return {k: v for k, v in m.items() if k != "_id"}
+    return _masquer_prix({k: v for k, v in m.items() if k != "_id"}, u)
 
 
 @routeur.post("/stock/ajustements")
@@ -254,9 +279,9 @@ def ajuster(corps: dict, u: dict = Depends(exiger_roles(roles.ECRITURE_STOCK))):
 def lots(aid: str, u: dict = Depends(exiger_roles(roles.LECTURE_STOCK))):
     """Lots d'un article (avec état de péremption) et 50 derniers mouvements."""
     a = _article(aid)
-    ls = [{k: v for k, v in l.items() if k != "_id"} | {"statut_peremption": statut_peremption(l.get("peremption", ""))}
+    ls = [_masquer_prix({k: v for k, v in l.items() if k != "_id"}, u) | {"statut_peremption": statut_peremption(l.get("peremption", ""))}
           for l in db.base().lots.find({"article_id": aid}).sort("peremption", 1)]
-    mv = list(db.base().mouvements.find({"article_id": aid}, {"_id": 0}).sort("quand", -1).limit(50))
+    mv = [_masquer_prix(m, u) for m in db.base().mouvements.find({"article_id": aid}, {"_id": 0}).sort("quand", -1).limit(50)]
     return {"article": _public(a), "lots": ls, "mouvements": mv}
 
 
@@ -272,7 +297,7 @@ def mouvements(article_id: str = "", du: str = "", au: str = "", u: dict = Depen
             f["date"]["$gte"] = validation.date_iso({"d": du}, "d", "Du")
         if au:
             f["date"]["$lte"] = validation.date_iso({"d": au}, "d", "Au")
-    return list(db.base().mouvements.find(f, {"_id": 0}).sort("quand", -1).limit(500))
+    return [_masquer_prix(m, u) for m in db.base().mouvements.find(f, {"_id": 0}).sort("quand", -1).limit(500)]
 
 
 @routeur.get("/stock/alertes")

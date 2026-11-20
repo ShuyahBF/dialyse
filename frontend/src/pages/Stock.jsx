@@ -41,7 +41,7 @@ export default function Stock() {
       const corps = { nom: form.nom, categorie: form.categorie, unite: form.unite, seuil_alerte: form.seuil_alerte, par_seance: form.par_seance };
       if (article) await avecToast("Enregistrement de l'article", () => api(`/stock/articles/${article.id}`, { methode: "PUT", corps }), () => "Article modifié");
       else await avecToast("Création de l'article", () => api("/stock/articles", { methode: "POST", corps }), (x) => `Article ${x.code} créé`);
-    } else if (mode === "entree") await avecToast("Enregistrement de l'entrée", () => api("/stock/entrees", { methode: "POST", corps: { article_id: article.id, ...form } }), () => "Entrée enregistrée");
+    } else if (mode === "entree") await avecToast("Enregistrement de l'entrée", () => api("/stock/entrees", { methode: "POST", corps: { article_id: article.id, ...form, cout_unitaire: form.cout_unitaire === "" ? undefined : Number(form.cout_unitaire) } }), () => "Entrée enregistrée");
     else if (mode === "sortie") await avecToast("Enregistrement de la sortie", () => api("/stock/sorties", { methode: "POST", corps: { article_id: article.id, ...form } }), () => "Sortie enregistrée");
     else await avecToast("Enregistrement de l'ajustement", () => api("/stock/ajustements", { methode: "POST", corps: { article_id: article.id, ...form } }), () => "Inventaire enregistré");
     setModal(null); await charger(); if (detail && article) await ouvrirLots(article);
@@ -97,7 +97,7 @@ export default function Stock() {
                 <td className="whitespace-nowrap">
                   <BoutonIcone icone={List} libelle="Lots et mouvements" onClick={() => ouvrirLots(a)} />
                   {peutEcrire && <>
-                    <BoutonIcone icone={PackagePlus} libelle="Entrée de stock" couleur="text-emerald-600" onClick={() => setModal({ mode: "entree", article: a, form: { quantite: "", lot: "", peremption: "", fournisseur: "", date: aujourdhui() } })} />
+                    <BoutonIcone icone={PackagePlus} libelle="Entrée de stock" couleur="text-emerald-600" onClick={() => setModal({ mode: "entree", article: a, form: { quantite: "", lot: "", peremption: "", fournisseur: "", cout_unitaire: "", date: aujourdhui() } })} />
                     <BoutonIcone icone={PackageMinus} libelle="Sortie ou perte" couleur="text-rose-600" onClick={() => setModal({ mode: "sortie", article: a, form: { quantite: "", type: "sortie", motif: "", lot: "" } })} />
                     <BoutonIcone icone={Pencil} libelle="Modifier l'article" couleur="text-slate-600" onClick={() => setModal({ mode: "article", article: a, form: { nom: a.nom, categorie: a.categorie, unite: a.unite, seuil_alerte: a.seuil_alerte, par_seance: a.par_seance } })} />
                   </>}
@@ -124,6 +124,7 @@ export default function Stock() {
             <Texte libelle="Numéro de lot" valeur={modal.form.lot} onChange={(v) => maj("lot", v)} aide="Obligatoire : il permet de retrouver les patients en cas de rappel de lot." />
             <Texte libelle="Date de péremption" type="date" valeur={modal.form.peremption} onChange={(v) => maj("peremption", v)} />
             <Texte libelle="Fournisseur" valeur={modal.form.fournisseur} onChange={(v) => maj("fournisseur", v)} />
+            <Texte libelle="Prix unitaire d'achat (FCFA)" type="number" step="1" valeur={modal.form.cout_unitaire} onChange={(v) => maj("cout_unitaire", v)} placeholder="12500" aide="Facultatif. Sert à valoriser les consommables dans la rentabilité ; sans prix, les sorties de ce lot ne sont pas comptées (l'écran Rentabilité le signale). Seule l'administration voit les prix." />
             <Texte libelle="Date de réception" type="date" valeur={modal.form.date} onChange={(v) => maj("date", v)} />
           </>}
           {modal.mode === "sortie" && <>
@@ -143,10 +144,11 @@ export default function Stock() {
         <Modal titre={`${detail.article.nom} — lots et mouvements`} large onFermer={() => setDetail(null)} pied={<>
           {peutEcrire && <Bouton icone={ClipboardCheck} variante="orange" onClick={() => setModal({ mode: "ajust", article: detail.article, form: { lot: "", quantite_constatee: "", motif: "" } })}>Inventaire d'un lot</Bouton>}
           <Bouton onClick={() => setDetail(null)}>Fermer</Bouton></>}>
-          <table className="tableau mb-4"><thead><tr><th>Lot</th><th>Péremption</th><th className="num">Restant</th><th>État</th></tr></thead>
+          <table className="tableau mb-4"><thead><tr><th>Lot</th><th>Péremption</th><th className="num">Restant</th>{detail.lots.some((l) => "cout_unitaire" in l) && <th className="num">Prix unitaire</th>}<th>État</th></tr></thead>
             <tbody>{detail.lots.map((l) => <tr key={l.id}><td className="font-medium text-emeraude">{l.numero}</td><td>{dateFr(l.peremption)}</td><td className="num">{nb(l.quantite_restante, 2)}</td>
+              {detail.lots.some((x) => "cout_unitaire" in x) && <td className="num tabular-nums">{l.cout_unitaire == null ? <span className="font-semibold text-orange-700" title="Prix inconnu : les sorties de ce lot ne sont pas valorisées">à renseigner</span> : `${nb(l.cout_unitaire, 0)} F`}</td>}
               <td>{PER[l.statut_peremption][1] ? <Pastille couleur={PER[l.statut_peremption][0]} icone={AlertTriangle}>{PER[l.statut_peremption][1]}</Pastille> : <span className="text-slate-400">—</span>}</td></tr>)}
-              {!detail.lots.length && <tr><td colSpan={4} className="text-slate-500">Aucun lot.</td></tr>}</tbody></table>
+              {!detail.lots.length && <tr><td colSpan={5} className="text-slate-500">Aucun lot.</td></tr>}</tbody></table>
           <h3 className="font-semibold mb-2">Derniers mouvements</h3>
           <table className="tableau"><thead><tr><th>Date</th><th>Type</th><th className="num">Quantité</th><th>Lot</th><th>Motif</th><th>Par</th></tr></thead>
             <tbody>{detail.mouvements.map((m) => <tr key={m.id}><td className="whitespace-nowrap">{dateHeureFr(m.quand)}</td><td><Pastille couleur={MOUV[m.type][0]}>{MOUV[m.type][1]}</Pastille></td>

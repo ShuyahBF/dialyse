@@ -1,4 +1,5 @@
 """Gestion du centre : planning du personnel, maintenance des postes, contrôle de l'eau, rentabilité."""
+import json
 from datetime import date, timedelta
 
 from app import db, eau, rentabilite
@@ -170,3 +171,65 @@ def test_rentabilite_par_mois(client):
 def test_rentabilite_par_defaut_six_mois(client):
     r = client.get("/rentabilite", headers=entete(client, "adm")).json()
     assert len(r["mois"]) == 6 and r["mois"][-1]["mois"] == AUJ[:7]
+
+
+# ---------- consommables valorisés (lot 27) ----------
+
+def _article_et_lot(client, h, cout=None):
+    """Un article « par séance » et une réception de 10 pièces dans le lot LOT-V1 (prix unitaire facultatif)."""
+    a = client.post("/stock/articles", json={"nom": "Dialyseur FX60", "categorie": "Dialyseur", "unite": "pièce", "seuil_alerte": 2, "par_seance": 0}, headers=h).json()
+    corps = {"article_id": a["id"], "quantite": 10, "lot": "LOT-V1", "peremption": "2031-01-01"}
+    if cout is not None:
+        corps["cout_unitaire"] = cout
+    r = client.post("/stock/entrees", json=corps, headers=h)
+    assert r.status_code == 200, r.text
+    return a
+
+
+def test_sortie_valorisee_dans_la_rentabilite(client):
+    ha = entete(client, "adm")
+    a = _article_et_lot(client, ha, cout=12500)
+    mois = AUJ[:7]
+    sortie = client.post("/stock/sorties", json={"article_id": a["id"], "quantite": 4}, headers=ha).json()
+    assert sortie["valeur"] == 50000 and sortie["sans_prix"] == 0                       # 4 x 12 500 FCFA
+    client.post("/rentabilite/charges", json={"mois": mois, "categorie": "Consommables et médicaments", "montant": 100000}, headers=ha)
+    r = client.get(f"/rentabilite?de={mois}&a={mois}", headers=ha).json()["mois"][0]
+    assert r["consommables_stock"] == 50000 and r["conso_sans_prix"] == 0
+    assert r["couts_variables"] == 150000                                               # stock valorisé + charge saisie : tous deux variables
+    perte = client.post("/stock/sorties", json={"article_id": a["id"], "quantite": 1, "type": "perte", "motif": "Casse"}, headers=ha).json()
+    assert perte["valeur"] == 12500                                                     # une perte est aussi un coût
+    assert client.get(f"/rentabilite?de={mois}&a={mois}", headers=ha).json()["total"]["consommables_stock"] == 62500
+
+
+def test_sortie_sans_prix_signalee_et_non_comptee(client):
+    ha = entete(client, "adm")
+    a = _article_et_lot(client, ha)                                                     # lot sans prix
+    mois = AUJ[:7]
+    s = client.post("/stock/sorties", json={"article_id": a["id"], "quantite": 3}, headers=ha).json()
+    assert s["valeur"] == 0 and s["sans_prix"] == 3
+    r = client.get(f"/rentabilite?de={mois}&a={mois}", headers=ha).json()["mois"][0]
+    assert r["consommables_stock"] == 0 and r["conso_sans_prix"] == 3                   # signalé à l'écran, jamais deviné
+
+
+def test_prix_d_un_lot_existant(client):
+    ha = entete(client, "adm")
+    a = _article_et_lot(client, ha, cout=1000)
+    meme = {"article_id": a["id"], "quantite": 2, "lot": "LOT-V1", "cout_unitaire": 1000}
+    assert client.post("/stock/entrees", json=meme, headers=ha).status_code == 200
+    assert client.post("/stock/entrees", json={**meme, "cout_unitaire": 1200}, headers=ha).status_code == 409         # un lot garde son prix
+    assert client.post("/stock/entrees", json={**meme, "cout_unitaire": -5}, headers=ha).status_code == 422
+
+
+def test_les_prix_ne_sont_vus_que_de_l_administration(client):
+    ha, hi = entete(client, "adm"), entete(client, "inf")
+    a = _article_et_lot(client, ha, cout=12500)
+    client.post("/stock/sorties", json={"article_id": a["id"], "quantite": 1}, headers=ha)
+    for h, vu in ((ha, True), (hi, False)):
+        detail = client.get(f"/stock/articles/{a['id']}/lots", headers=h).json()
+        mouvements = client.get("/stock/mouvements", headers=h).json()
+        assert ("cout_unitaire" in detail["lots"][0]) is vu
+        assert all(("valeur" in m) is vu for m in mouvements if m["type"] == "sortie")
+        assert all("cout_unitaire" not in json.dumps(m.get("lots", [])) for m in mouvements)   # jamais dans la liste des lots utilisés
+    # un infirmier peut RECEVOIR du stock avec un prix mais ne le revoit pas
+    r = client.post("/stock/entrees", json={"article_id": a["id"], "quantite": 1, "lot": "LOT-V2", "cout_unitaire": 900}, headers=hi)
+    assert r.status_code == 200 and "cout_unitaire" not in r.json()
