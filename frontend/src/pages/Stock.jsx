@@ -1,6 +1,7 @@
 // Consommables et stocks : alertes, articles (triables), entrées / sorties / pertes, lots et ajustements d'inventaire, traçabilité d'un lot.
-import { AlertTriangle, ClipboardCheck, List, PackageMinus, PackagePlus, Pencil, Plus, RefreshCw, Save, Search, Siren } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, List, PackageMinus, PackagePlus, Pencil, Plus, RefreshCw, Save, Search, Siren, Timer } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Bouton, { BoutonIcone } from "../composants/Bouton.jsx";
 import { Liste, Pastille, Texte } from "../composants/Champs.jsx";
 import Modal from "../composants/Modal.jsx";
@@ -62,6 +63,7 @@ export default function Stock() {
         <h1 className="text-2xl font-semibold">Consommables Et Stocks</h1>
         <div className="flex gap-2">
           <Bouton icone={RefreshCw} onClick={() => avecToast("Actualisation du stock", charger, () => "Stock actualisé")}>Actualiser</Bouton>
+          <Link to="/stock/previsions" className="inline-flex items-center gap-2 rounded-full bg-citron px-5 py-2.5 font-semibold text-white hover:bg-citron-600"><Timer size={18} />Prévisions et commande</Link>
           {peutEcrire && <Bouton icone={Plus} variante="principal" onClick={() => setModal({ mode: "article", form: { seuil_alerte: 0, par_seance: 0 } })}>Nouvel article</Bouton>}
         </div>
       </div>
