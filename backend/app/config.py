@@ -11,7 +11,7 @@ Sur Render : onglet « Environment » du service.
   TACHES_DE_FOND           « 0 » pour désactiver les tâches planifiées (tests)
   WEBAUTHN_RP_ID           nom de domaine du site pour les clés d'accès (défaut : domaine de FRONTEND_ORIGIN) ; le changer oblige à recréer les clés
   LILUVINE_WA_URL / LILUVINE_WA_HMAC / LILUVINE_WA_EMETTEUR  WhatsApp par « Liluvine Standard » de SAWALI (la clé HMAC est un secret saisi dans Render)
-  FRONTEND_ORIGIN          adresse du site web (pour CORS), ex. https://dialyse.onrender.com
+  FRONTEND_ORIGIN          adresse du site web (pour CORS), https://looisdialyse.cloud
   PRESENCE_SAWALI          « 0 » pour désactiver le signal de présence (tests)
 """
 import os
