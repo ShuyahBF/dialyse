@@ -147,3 +147,8 @@ Rappel des principales :
   pastille = contrôles manquants + relevés non traités ; courbe des 30 derniers jours.
 - **Rentabilité** (`backend/app/rentabilite.py`, administration et direction) : par mois entier (`de` / `a` au format AAAA-MM, 24 mois au plus, 6 par défaut) : facturé et encaissé (factures non annulées), coûts = personnel + maintenance terminée + charges saisies (`charges` : consommables et médicaments = VARIABLE, le reste fixe), marge, taux de marge, coût et recette par séance, SEUIL de rentabilité = coûts fixes / (recette moyenne − coût variable moyen) ;
   totaux collés sous le tableau (règle 25), pourcentages jamais additionnés. Nouvelles collections par centre : `personnel`, `affectations`, `interventions`, `controles_eau`, `charges`. Tests : `backend/tests/test_gestion_centre.py`.
+
+## Piège React à éviter : fonctions passées en propriété (lot 23, constat du 20/11/2026 sur la vidéo du propriétaire : « je ne peux rien saisir »)
+- Une fonction passée en propriété à un composant enfant (`onChange={() => …}`) change à CHAQUE rendu du parent. Si l'enfant la met dans les dépendances d'un `useCallback` ou d'un `useEffect` qui charge des données ET remet des champs à zéro, l'effet se relance en boucle : jauge sans fin, saisie effacée.
+  Règle : garder une telle fonction dans une RÉFÉRENCE (`const ref = useRef(f); ref.current = f;`) ; ne remettre un champ à zéro que dans un effet qui dépend de l'IDENTIFIANT de l'objet affiché (ex. `[contact.id]`), jamais de la fonction de chargement. Modèle : `Conversation` dans `pages/Messagerie.jsx`.
+- Libellés de menu : un sigle s'écrit déjà en majuscules dans le libellé (« centre de messagerie WA ») : `titreMenu` ne met en majuscule que la première lettre de chaque mot et ne baisse jamais le reste.
