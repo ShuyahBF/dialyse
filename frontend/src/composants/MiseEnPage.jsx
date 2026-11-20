@@ -1,6 +1,6 @@
 // Cadre du portail (présentation ZandGo) : barre latérale bleu nuit de 230 px (logo, menus à pictogrammes, élément actif en orange,
 // nom + rôle en pastille, déconnexion, version), menu replié derrière un bouton « Menu » sur téléphone. Majuscule à chaque mot (règle 18).
-import { Activity, Building2, Droplets, TrendingUp, Users as UsersEquipe, Wrench, BarChart3, CalendarDays, CalendarRange, ClipboardList, MessageCircle, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
+import { Activity, Building2, ImageIcon, Droplets, TrendingUp, Users as UsersEquipe, Wrench, BarChart3, CalendarDays, CalendarRange, ClipboardList, MessageCircle, DatabaseBackup, ClipboardCheck, LayoutDashboard, LogOut, ShieldAlert, Menu, Monitor, Package, Receipt, ShieldCheck, UserCog, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
@@ -31,6 +31,7 @@ const MENU = [
   { chemin: "/stock", libelle: "consommables et stocks", icone: Package, roles: ["super_admin", "admin", "medecin", "infirmier", "technicien"] },
   { chemin: "/facturation", libelle: "facturation", icone: Receipt, roles: ["super_admin", "admin", "secretariat"] },
   { chemin: "/centres", libelle: "centres de dialyse", icone: Building2, roles: ["super_admin"] },
+  { chemin: "/fond-accueil", libelle: "apparence de l'accueil", icone: ImageIcon, roles: ["super_admin"] },
   { chemin: "/fiche-centre", libelle: "fiche du centre", icone: Building2, roles: ["super_admin", "admin"] },
   { chemin: "/utilisateurs", libelle: "gestion des comptes", icone: UserCog, roles: ["super_admin", "admin"] },
   { chemin: "/journal", libelle: "journal d'audit", icone: ClipboardList, roles: ["super_admin", "admin"] },

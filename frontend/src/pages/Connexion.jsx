@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton from "../composants/Bouton.jsx";
 import ChampMotDePasse from "../composants/ChampMotDePasse.jsx";
+import FondAccueil, { useFondAccueil } from "../composants/FondAccueil.jsx";
 import Logo from "../composants/Logo.jsx";
 import { Champ, Texte } from "../composants/Champs.jsx";
 import { api, jeton } from "../lib/api.js";
@@ -24,6 +25,7 @@ export default function Connexion() {
   const [attente, setAttente] = useState(false);
   const [etat, setEtat] = useState("verification");        // verification | actif | lent | injoignable
   const [options, setOptions] = useState({ whatsapp: false });
+  const [fond] = useFondAccueil();                         // image ou vidéo de fond choisie par le super administrateur (facultative)
 
   // État du serveur : « Serveur actif », lent (> 3 s) ou injoignable ; moyens d'accès proposés.
   useEffect(() => {
@@ -64,8 +66,9 @@ export default function Connexion() {
   }[etat];
 
   return (
-    <div className="grid min-h-screen place-items-center bg-encre px-4 py-10">
-      <main className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+    <div className="relative grid min-h-screen place-items-center bg-encre px-4 py-10">
+      <FondAccueil fond={fond} />
+      <main className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <div className="flex flex-col items-center">
           <Logo taille={40} />
           <h1 className="mt-5 text-center font-editorial text-2xl font-bold italic text-encre">Gestion des actes de dialyse</h1>

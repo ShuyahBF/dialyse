@@ -5,6 +5,6 @@ SOURCE UNIQUE de la version et du lot du serveur (règles du propriétaire n° 1
 Modifier ce fichier force aussi le redéploiement sur Render (le service a un rootDir « backend »).
 La date de déploiement est celle du démarrage du serveur (voir main.py).
 """
-VERSION = "1.21"
-LOT = "24"
-LOT_LIBELLE = "Ligne WhatsApp dédiée par centre : chaque centre peut avoir son propre émetteur Liluvine et sa clé ; retours routés vers le bon centre ; repli facultatif sur la ligne partagée."
+VERSION = "1.22"
+LOT = "25"
+LOT_LIBELLE = "Fond de la page d'accueil : image ou vidéo choisie par le super administrateur (Apparence De L'Accueil), avec aperçu et assombrissement réglable."
