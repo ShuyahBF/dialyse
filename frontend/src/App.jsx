@@ -27,6 +27,7 @@ import Rapports from "./pages/Rapports.jsx";
 import Suivi from "./pages/Suivi.jsx";
 import ModelesAdhesion from "./pages/ModelesAdhesion.jsx";
 import Sauvegardes from "./pages/Sauvegardes.jsx";
+import PrevisionsStock from "./pages/PrevisionsStock.jsx";
 import Stock from "./pages/Stock.jsx";
 import Tableau from "./pages/Tableau.jsx";
 import Utilisateurs from "./pages/Utilisateurs.jsx";
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="modeles" element={<ModelesAdhesion />} />
             <Route path="sauvegardes" element={<Sauvegardes />} />
             <Route path="stock" element={<Stock />} />
+            <Route path="stock/previsions" element={<PrevisionsStock />} />
             <Route path="fiche-centre" element={<FicheCentrePage />} />
             <Route path="personnel" element={<Personnel />} />
             <Route path="maintenance" element={<Maintenance />} />
