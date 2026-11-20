@@ -91,7 +91,8 @@ def _contacts_de_numero(numero: str) -> list[dict]:
 def etat(u: dict = Depends(exiger_roles(MESSAGERIE))):
     """État de la messagerie : WhatsApp configuré ?, messages non lus, demandes nouvelles."""
     b = db.base()
-    return {"configure": whatsapp.configure(), "non_lus": b.wa_messages.count_documents({"sens": "entrant", "lu": False}),
+    centre = db.centre_courant.get()
+    return {"configure": whatsapp.configure(centre), "canal": whatsapp.canal_du_centre(centre), "non_lus": b.wa_messages.count_documents({"sens": "entrant", "lu": False}),
             "demandes_nouvelles": b.wa_demandes.count_documents({"statut": "nouvelle"})}
 
 
@@ -234,7 +235,7 @@ def appliquer_variables(texte: str, contact: dict, extra: dict | None = None) ->
 
 def _noter_message(contact_id: str, **champs) -> dict:
     """Range un message (sens, texte, statut…) et met à jour le résumé du contact (dernier message, non lus)."""
-    doc = {"id": str(uuid.uuid4()), "contact_id": contact_id, "cree_le": _maintenant(), "lu": champs.get("sens") != "entrant", **champs}
+    doc = {"id": str(uuid.uuid4()), "contact_id": contact_id, "cree_le": _maintenant(), "lu": champs.get("sens") != "entrant", "canal": whatsapp.canal_du_centre(db.centre_courant.get()) if champs.get("sens") == "sortant" else "", **champs}
     db.base().wa_messages.insert_one(doc)
     db.base().contacts.update_one({"id": contact_id}, {"$set": {"dernier_le": doc["cree_le"], "dernier_extrait": (champs.get("texte") or ("📎 " + champs.get("document", "")))[:80]}})
     return doc
@@ -247,7 +248,7 @@ def _maj_message(centre_id: str, msg_id: str, **champs) -> None:
 
 def _expedier(centre_id: str, msg_id: str, numero: str, texte: str, media: dict | None) -> None:
     """Fil d'ARRIÈRE-PLAN : appelle Liluvine puis note le résultat sur le message. N'attend jamais la requête de l'écran."""
-    ok, erreur = whatsapp.envoyer(numero, texte, media, identifiant=msg_id)
+    ok, erreur = whatsapp.envoyer(numero, texte, media, identifiant=msg_id, centre_id=centre_id)
     _maj_message(centre_id, msg_id, statut="envoye" if ok else "echec", erreur="" if ok else erreur, envoye_le=_maintenant() if ok else "")
     if erreur and "désinscrit" in erreur:
         db.brut().contacts.update_many({"numero": numero, "centre_id": centre_id}, {"$set": {"desinscrit": True}})
@@ -287,7 +288,7 @@ def _document_pour(contact: dict, doc: dict) -> tuple[dict, str]:
 @routeur.post("/messagerie/envoyer")
 def envoyer(corps: dict, u: dict = Depends(exiger_roles(MESSAGERIE))):
     """Envoie un message (texte et/ou document) à un contact. Départ en arrière-plan : la réponse est immédiate (statut « en cours »)."""
-    if not whatsapp.configure():
+    if not whatsapp.configure(db.centre_courant.get()):
         raise HTTPException(503, "WhatsApp n'est pas configuré sur le serveur (LILUVINE_WA_URL et LILUVINE_WA_HMAC)")
     c = _contact(str(corps.get("contact_id") or ""))
     if c.get("desinscrit"):
@@ -358,7 +359,7 @@ def notifier(evenement: str, patient_id: str, extra: dict | None = None) -> bool
     """
     try:
         p = parametres_auto()
-        if not (p["actif"] and p["evenements"].get(evenement) and whatsapp.configure()):
+        if not (p["actif"] and p["evenements"].get(evenement) and whatsapp.configure(db.centre_courant.get())):
             return False
         pat = db.base().patients.find_one({"id": patient_id}, {"_id": 0, "id": 1, "nom": 1, "prenom": 1, "telephone": 1})
         numero = whatsapp.normaliser_numero((pat or {}).get("telephone") or "")
@@ -475,7 +476,7 @@ def apercu_rappels(date_: str = Query("", alias="date"), u: dict = Depends(exige
 @routeur.post("/messagerie/rappels")
 def envoyer_rappels(corps: dict, u: dict = Depends(exiger_roles(MESSAGERIE))):
     """Rappel WhatsApp à chaque patient ayant une séance planifiée ce jour-là (modèle choisi, sinon « Rappel de séance »). Départ en arrière-plan."""
-    if not whatsapp.configure():
+    if not whatsapp.configure(db.centre_courant.get()):
         raise HTTPException(503, "WhatsApp n'est pas configuré sur le serveur (LILUVINE_WA_URL et LILUVINE_WA_HMAC)")
     jour = validation.date_iso({"d": corps.get("date") or (date.today() + timedelta(days=1)).isoformat()}, "d", "Date", True)
     modeles = _modeles()
@@ -519,37 +520,42 @@ def traiter_demande(id_: str, corps: dict, u: dict = Depends(exiger_roles(MESSAG
 
 # ---------- retours signés de SAWALI ----------
 
-def _corps_signe(brut: bytes, horodatage: str, signature: str) -> dict:
-    """Vérifie la signature de SAWALI (clé LILUVINE_WA_HMAC ; en-têtes X-Timestamp et X-Signature ; 5 minutes) et rend le corps JSON."""
-    from .config import env
-    cle = env("LILUVINE_WA_HMAC").strip()
-    if not cle:
+def _corps_signe(brut: bytes, horodatage: str, signature: str) -> tuple[dict, str | None]:
+    """
+    Vérifie la signature de SAWALI (en-têtes X-Timestamp et X-Signature ; 5 minutes) et rend (corps JSON, centre). La clé qui vérifie la signature dit D'OÙ vient le retour :
+    la clé partagée « dialyse » → centre None (on cherche alors le centre par le numéro) ; la clé d'un centre → ce centre, SANS ambiguïté (sa ligne dédiée).
+    """
+    cles = whatsapp.cles_de_retour()
+    if not cles:
         raise HTTPException(503, "LILUVINE_WA_HMAC non configurée")
     if not horodatage.isdigit() or abs(time.time() - int(horodatage)) > 300:
         raise HTTPException(401, "Horodatage invalide")
-    if not hmac.compare_digest(whatsapp.signer(cle, horodatage, brut.decode("utf-8")), signature or ""):
+    texte = brut.decode("utf-8")
+    centre = next((c for c, cle in cles if hmac.compare_digest(whatsapp.signer(cle, horodatage, texte), signature or "")), "refus")
+    if centre == "refus":
         raise HTTPException(401, "Signature invalide")
     try:
-        corps = json.loads(brut.decode("utf-8") or "{}")
+        corps = json.loads(texte or "{}")
     except ValueError:
         raise HTTPException(422, "Corps JSON invalide")
     if not isinstance(corps, dict):
         raise HTTPException(422, "Corps JSON attendu")
-    return corps
+    return corps, centre
 
 
-def _stats_du_jour() -> dict:
-    """Indicateurs du jour pour la synthèse quotidienne de SAWALI : TOUS les centres, agrégés, sans aucune donnée de patient."""
+def _stats_du_jour(centre: str | None = None) -> dict:
+    """Indicateurs du jour pour la synthèse quotidienne de SAWALI, sans aucune donnée de patient : TOUS les centres (clé partagée) ou CE centre seulement (clé de sa ligne dédiée)."""
     from . import lot
     from .main import DEPLOYE_LE
     b, auj = db.brut(), date.today().isoformat()
+    f = {"centre_id": centre} if centre else {}
     return {"indicateurs": [
-        {"cle": "centres", "libelle": "Centres actifs", "valeur": b.centres.count_documents({"actif": {"$ne": False}})},
-        {"cle": "seances", "libelle": "Séances du jour", "valeur": b.seances.count_documents({"date": auj, "statut": {"$in": ["planifiee", "en_cours", "terminee"]}})},
-        {"cle": "terminees", "libelle": "Séances terminées", "valeur": b.seances.count_documents({"date": auj, "statut": "terminee"})},
-        {"cle": "patients", "libelle": "Patients en dialyse", "valeur": b.patients.count_documents({"statut": "actif"})},
-        {"cle": "wa_envoyes", "libelle": "WhatsApp envoyés", "valeur": b.wa_messages.count_documents({"sens": "sortant", "cree_le": {"$gte": auj}})},
-        {"cle": "wa_recus", "libelle": "WhatsApp reçus", "valeur": b.wa_messages.count_documents({"sens": "entrant", "cree_le": {"$gte": auj}})}],
+        {"cle": "centres", "libelle": "Centres actifs", "valeur": 1 if centre else b.centres.count_documents({"actif": {"$ne": False}})},
+        {"cle": "seances", "libelle": "Séances du jour", "valeur": b.seances.count_documents({**f, "date": auj, "statut": {"$in": ["planifiee", "en_cours", "terminee"]}})},
+        {"cle": "terminees", "libelle": "Séances terminées", "valeur": b.seances.count_documents({**f, "date": auj, "statut": "terminee"})},
+        {"cle": "patients", "libelle": "Patients en dialyse", "valeur": b.patients.count_documents({**f, "statut": "actif"})},
+        {"cle": "wa_envoyes", "libelle": "WhatsApp envoyés", "valeur": b.wa_messages.count_documents({**f, "sens": "sortant", "cree_le": {"$gte": auj}})},
+        {"cle": "wa_recus", "libelle": "WhatsApp reçus", "valeur": b.wa_messages.count_documents({**f, "sens": "entrant", "cree_le": {"$gte": auj}})}],
         "version": lot.VERSION, "deploye_le": DEPLOYE_LE}
 
 
@@ -567,16 +573,16 @@ def _accuser(centre_id: str, numero: str, texte: str) -> None:
     acces.lancer(_expedier, centre_id, mid, numero, texte, None)
 
 
-def _traiter_reponse(corps: dict) -> None:
+def _traiter_reponse(corps: dict, centre: str | None = None) -> None:
     """Un contact a répondu : message rangé dans la conversation du bon centre ; « 1 / 2 » confirment ou excusent une séance ; un mot de réservation crée une demande."""
     numero = whatsapp.normaliser_numero(str(corps.get("de") or corps.get("from") or ""))
     texte = str(corps.get("texte") or corps.get("message") or corps.get("text") or "").strip()[:1000]
     if not numero or not texte:
         return
-    candidats = _contacts_de_numero(numero)
+    candidats = [c for c in _contacts_de_numero(numero) if not centre or c["centre_id"] == centre]       # retour de la ligne d'un centre : SES contacts seulement
     if not candidats:
-        # Numéro inconnu : un seul centre actif = c'est le sien ; sinon la boîte « non classés » du groupe.
-        actifs = list(db.brut().centres.find({"actif": {"$ne": False}}, {"_id": 0, "id": 1}))
+        # Numéro inconnu : retour de la ligne d'un centre = ce centre ; sinon un seul centre actif = c'est le sien ; sinon la boîte « non classés » du groupe.
+        actifs = [{"id": centre}] if centre else list(db.brut().centres.find({"actif": {"$ne": False}}, {"_id": 0, "id": 1}))
         if len(actifs) != 1:
             db.brut().wa_non_classes.insert_one({"numero": numero, "extrait": texte[:80], "cree_le": _maintenant()})
             return
@@ -611,27 +617,27 @@ def _traiter_reponse(corps: dict) -> None:
 async def retour_sawali(request: Request):
     """
     Adresse de retour signée de SAWALI (règle 7) : statut de remise, réponse d'un contact, désinscription (STOP), statistiques du jour. À saisir dans SAWALI
-    (émetteur « dialyse » → URL de retour) : https://api.looisdialyse.space/api/webhooks/liluvine-retour
+    (émetteur « dialyse » → URL de retour) : https://api.looisdialyse.cloud/api/webhooks/liluvine-retour
     """
     from fastapi.concurrency import run_in_threadpool
     brut = await request.body()
-    corps = _corps_signe(brut, request.headers.get("x-timestamp") or "", request.headers.get("x-signature") or "")
+    corps, centre = _corps_signe(brut, request.headers.get("x-timestamp") or "", request.headers.get("x-signature") or "")
     genre = str(corps.get("type") or "")
 
     def travail():
         if genre == "stats_du_jour":
-            return _stats_du_jour()
+            return _stats_du_jour(centre)
         if genre == "statut":
             ident = str(corps.get("id") or corps.get("message_id") or "")
             etat_ = str(corps.get("statut") or "").lower()
             if ident and etat_:
                 db.brut().wa_messages.update_one({"id": ident}, {"$set": {"statut": {"delivered": "remis", "read": "lu", "sent": "envoye", "failed": "echec"}.get(etat_, etat_)}})
         elif genre == "reponse":
-            _traiter_reponse(corps)
+            _traiter_reponse(corps, centre)
         elif genre == "desinscription":
             numero = whatsapp.normaliser_numero(str(corps.get("de") or corps.get("from") or ""))
             if numero:
-                db.brut().contacts.update_many({"numero": numero}, {"$set": {"desinscrit": True, "desinscrit_le": _maintenant()}})
+                db.brut().contacts.update_many({"numero": numero, **({"centre_id": centre} if centre else {})}, {"$set": {"desinscrit": True, "desinscrit_le": _maintenant()}})
         else:
             db.brut().retours_sawali.insert_one({"type": genre[:40], "recu_le": _maintenant()})          # autres types : trace minimale, aucun contenu
         return {"ok": True}

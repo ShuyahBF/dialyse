@@ -172,6 +172,7 @@ export default function Messagerie() {
         <Bouton icone={RefreshCw} onClick={() => avecToast("Actualisation de la messagerie", charger, (c) => `${c.length} contact(s), ${totalNonLus} message(s) non lu(s)`)}>Actualiser</Bouton>
       </div>
       <BandeauVersion className="mb-3" />
+      {etat?.configure && <p className="mb-2 text-xs text-slate-500">Canal d'envoi : {etat.canal === "ligne_centre" ? <b className="text-emerald-700">ligne WhatsApp propre à ce centre</b> : <b>ligne partagée Liluvine (SAWALI)</b>}.</p>}
       {etat && !etat.configure && <p className="mb-3 rounded-lg bg-orange-50 p-3 text-sm text-orange-900">WhatsApp n'est pas encore configuré sur le serveur : saisissez <b>LILUVINE_WA_URL</b> et <b>LILUVINE_WA_HMAC</b> dans Render (clé de l'émetteur « dialyse » créé dans SAWALI). Les contacts et les modèles restent utilisables.</p>}
       <Onglets actif={onglet} onChoix={setOnglet} onglets={[["conversations", "Conversations", totalNonLus], ["contacts", "Contacts", 0], ["modeles", "Modèles de messages", 0], ["rappels", "Rappels de séances", 0], ["auto", "Notifications auto", 0]]} />
 

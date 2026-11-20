@@ -107,7 +107,8 @@ def test_reponse_statut_et_reservation(client, wa):
     assert _retour(client, {"type": "statut", "id": mid, "statut": "delivered"}).status_code == 200
     assert client.get(f"/messagerie/contacts/{c['id']}/messages", headers=h).json()["messages"][0]["statut"] == "remis"
     assert _retour(client, {"type": "reponse", "de": "+22670123456", "texte": "Je voudrais un rendez-vous la semaine prochaine"}).status_code == 200
-    assert client.get("/messagerie/etat", headers=h).json() == {"configure": True, "non_lus": 1, "demandes_nouvelles": 1}
+    e = client.get("/messagerie/etat", headers=h).json()
+    assert e["configure"] is True and e["non_lus"] == 1 and e["demandes_nouvelles"] == 1 and e["canal"] == "partagee"
     d = client.get("/messagerie/demandes?statut=nouvelle", headers=h).json()[0]
     assert d["type"] == "reservation" and d["contact_nom"] == "OUEDRAOGO Awa"
     assert any("bien été reçue" in m["message"] for m in wa[1:])                                                           # accusé de réception automatique

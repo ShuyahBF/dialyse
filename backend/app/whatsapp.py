@@ -43,9 +43,62 @@ _ERREURS = {
 }
 
 
-def configure() -> bool:
-    """Vrai si la Transmission universelle est utilisable (adresse ET clé saisies dans Render)."""
+def configure(centre_id: str | None = None) -> bool:
+    """
+    Vrai si un envoi WhatsApp est possible : la LIGNE DU CENTRE (émetteur propre + sa clé `LILUVINE_WA_HMAC_<PRÉFIXE>`) si `centre_id` est donné et que le centre en a une,
+    sinon la ligne partagée « dialyse » (adresse ET clé saisies dans Render).
+    """
+    if centre_id and ligne_du_centre(centre_id):
+        return True
     return bool(env("LILUVINE_WA_URL").strip() and env("LILUVINE_WA_HMAC").strip())
+
+
+def variable_cle_centre(prefixe: str) -> str:
+    """Nom de la variable Render qui porte la clé HMAC de la ligne d'un centre : LILUVINE_WA_HMAC_<PRÉFIXE> (ex. LILUVINE_WA_HMAC_CMC)."""
+    return "LILUVINE_WA_HMAC_" + re.sub(r"[^A-Z0-9]", "", str(prefixe or "").upper())
+
+
+def ligne_du_centre(centre_id: str | None) -> dict | None:
+    """
+    LIGNE DÉDIÉE d'un centre (une ligne WhatsApp privée par centre, assignée dans SAWALI à un émetteur propre à ce centre) : {emetteur, cle, repli, centre_id, prefixe}.
+    None si le centre n'a pas d'émetteur, ou si la variable de clé n'est pas saisie dans Render (le centre utilise alors la ligne partagée). Jamais d'exception.
+    """
+    try:
+        if not centre_id:
+            return None
+        from . import db
+        c = db.brut().centres.find_one({"id": centre_id}, {"_id": 0, "wa_emetteur": 1, "wa_repli": 1, "prefixe": 1})
+        if not c or not c.get("wa_emetteur"):
+            return None
+        cle = env(variable_cle_centre(c["prefixe"])).strip()
+        if not cle or not env("LILUVINE_WA_URL").strip():
+            return None
+        return {"emetteur": c["wa_emetteur"], "cle": cle, "repli": bool(c.get("wa_repli")), "centre_id": centre_id, "prefixe": c["prefixe"]}
+    except Exception:                                          # noqa: BLE001
+        return None
+
+
+def canal_du_centre(centre_id: str | None) -> str:
+    """« ligne_centre » (ligne dédiée), « partagee » (ligne Liluvine commune) ou « aucun »."""
+    if ligne_du_centre(centre_id):
+        return "ligne_centre"
+    return "partagee" if configure() else "aucun"
+
+
+def cles_de_retour() -> list[tuple[str | None, str]]:
+    """Clés avec lesquelles SAWALI peut signer un RETOUR : la clé partagée (centre None) puis la clé de chaque centre qui a une ligne dédiée. La clé qui vérifie la signature dit de quel centre vient le retour."""
+    res: list[tuple[str | None, str]] = []
+    if env("LILUVINE_WA_HMAC").strip():
+        res.append((None, env("LILUVINE_WA_HMAC").strip()))
+    try:
+        from . import db
+        for c in db.brut().centres.find({"wa_emetteur": {"$exists": True, "$ne": ""}}, {"_id": 0, "id": 1, "prefixe": 1}):
+            cle = env(variable_cle_centre(c["prefixe"])).strip()
+            if cle:
+                res.append((c["id"], cle))
+    except Exception:                                          # noqa: BLE001
+        pass
+    return res
 
 
 def normaliser_numero(brut: str) -> str:
@@ -105,46 +158,60 @@ def _champ_media(media: dict) -> dict:
     return champ
 
 
-def envoyer(numero: str, texte: str, media: dict | None = None, identifiant: str | None = None) -> tuple[bool, str]:
+def _envoyer_via(url: str, emetteur: str, cle: str, destinataire: str, message: str, media: dict | None, identifiant: str | None) -> tuple[bool, str]:
+    """Un envoi par UNE ligne (émetteur + clé) : signature, un nouvel essai sur 5xx / réseau, jamais sur 4xx. Rend (ok, erreur lisible)."""
+    corps = {"id": identifiant or str(uuid.uuid4()), "to": "+" + destinataire, "message": message[:LONGUEUR_MAX], "source": "Dialyse"}
+    if media:
+        try:
+            corps["media"] = _champ_media(media)
+        except ValueError as e:
+            return False, str(e)
+    brut = json.dumps(corps, ensure_ascii=False, separators=(",", ":"))      # sérialisé UNE fois : ce texte est signé ET envoyé (même id au 2e essai)
+    derniere = "Liluvine injoignable"
+    for essai in (1, 2):
+        horodatage = str(int(time.time()))
+        entetes = {"Content-Type": "application/json", "X-Emetteur": emetteur, "X-Timestamp": horodatage, "X-Signature": signer(cle, horodatage, brut)}
+        try:
+            etat, donnees = _appel_http(url, entetes, brut.encode("utf-8"))
+        except OSError as exc:
+            log.warning("Liluvine : erreur réseau (essai %s) : %s", essai, type(exc).__name__)
+            continue
+        if etat >= 500:
+            log.warning("Liluvine : HTTP %s (essai %s)", etat, essai)
+            derniere = f"Liluvine : erreur du service (HTTP {etat})"
+            continue
+        if etat == 200:
+            return (True, "") if donnees.get("ok", True) else (False, "Liluvine : envoi refusé")
+        log.warning("Liluvine : refus HTTP %s (message de %s caractères)", etat, len(message))      # jamais le texte (il contient un code)
+        return False, _ERREURS.get(etat, f"Liluvine : refus (HTTP {etat})")
+    return False, derniere
+
+
+def envoyer(numero: str, texte: str, media: dict | None = None, identifiant: str | None = None, centre_id: str | None = None) -> tuple[bool, str]:
     """
     Envoie `texte` au numéro (chiffres, indicatif compris), avec un DOCUMENT ou une IMAGE facultatif (`media` : type, contenu en octets, nom_fichier, mime, legende ; protocole v3).
-    `identifiant` : identifiant du message (suivi des statuts de remise par SAWALI). Ne lève JAMAIS d'exception. Rend (ok, erreur lisible).
+    `identifiant` : identifiant du message (suivi des statuts de remise par SAWALI). `centre_id` : si le centre a sa LIGNE DÉDIÉE, le message part par elle (émetteur et clé du centre) ;
+    en cas d'échec de cette ligne, repli sur la ligne partagée SEULEMENT si le centre l'a demandé (`wa_repli`) et si l'échec ne tient pas au numéro. Ne lève JAMAIS d'exception. Rend (ok, erreur lisible).
     """
     try:
-        if not configure():
-            return False, "WhatsApp n'est pas configuré sur le serveur (LILUVINE_WA_URL et LILUVINE_WA_HMAC)"
         destinataire = normaliser_numero(numero)
         message = (texte or "").strip()
+        ligne = ligne_du_centre(centre_id)
+        partagee = bool(env("LILUVINE_WA_URL").strip() and env("LILUVINE_WA_HMAC").strip())
+        if not ligne and not partagee:
+            return False, "WhatsApp n'est pas configuré sur le serveur (LILUVINE_WA_URL et LILUVINE_WA_HMAC)"
         if not destinataire:
             return False, "Numéro WhatsApp invalide"
         if not message and not media:
             return False, "Message vide"
-        corps = {"id": identifiant or str(uuid.uuid4()), "to": "+" + destinataire, "message": message[:LONGUEUR_MAX], "source": "Dialyse"}
-        if media:
-            try:
-                corps["media"] = _champ_media(media)
-            except ValueError as e:
-                return False, str(e)
-        brut = json.dumps(corps, ensure_ascii=False, separators=(",", ":"))      # sérialisé UNE fois : ce texte est signé ET envoyé (même id au 2e essai)
-        derniere = "Liluvine injoignable"
-        for essai in (1, 2):
-            horodatage = str(int(time.time()))
-            entetes = {"Content-Type": "application/json", "X-Emetteur": (env("LILUVINE_WA_EMETTEUR") or "dialyse").strip(),
-                       "X-Timestamp": horodatage, "X-Signature": signer(env("LILUVINE_WA_HMAC").strip(), horodatage, brut)}
-            try:
-                etat, donnees = _appel_http(env("LILUVINE_WA_URL").strip(), entetes, brut.encode("utf-8"))
-            except OSError as exc:
-                log.warning("Liluvine : erreur réseau (essai %s) : %s", essai, type(exc).__name__)
-                continue
-            if etat >= 500:
-                log.warning("Liluvine : HTTP %s (essai %s)", etat, essai)
-                derniere = f"Liluvine : erreur du service (HTTP {etat})"
-                continue
-            if etat == 200:
-                return (True, "") if donnees.get("ok", True) else (False, "Liluvine : envoi refusé")
-            log.warning("Liluvine : refus HTTP %s (message de %s caractères)", etat, len(message))      # jamais le texte (il contient un code)
-            return False, _ERREURS.get(etat, f"Liluvine : refus (HTTP {etat})")
-        return False, derniere
+        url = env("LILUVINE_WA_URL").strip()
+        if ligne:
+            ok, erreur = _envoyer_via(url, ligne["emetteur"], ligne["cle"], destinataire, message, media, identifiant)
+            # repli : jamais si le numéro est en cause (STOP = 409, numéro refusé = 400) ni sans demande du centre
+            if ok or not ligne["repli"] or not partagee or "désinscrit" in erreur or "données invalides" in erreur:
+                return ok, erreur
+            log.warning("Liluvine : ligne du centre en échec, repli sur la ligne partagée")
+        return _envoyer_via(url, (env("LILUVINE_WA_EMETTEUR") or "dialyse").strip(), env("LILUVINE_WA_HMAC").strip(), destinataire, message, media, identifiant)
     except Exception as exc:                                     # noqa: BLE001 — un envoi raté ne doit jamais faire tomber une requête
         log.warning("Liluvine : erreur inattendue (%s)", type(exc).__name__)
         return False, "Envoi WhatsApp impossible"

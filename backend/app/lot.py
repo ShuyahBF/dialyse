@@ -5,6 +5,6 @@ SOURCE UNIQUE de la version et du lot du serveur (règles du propriétaire n° 1
 Modifier ce fichier force aussi le redéploiement sur Render (le service a un rootDir « backend »).
 La date de déploiement est celle du démarrage du serveur (voir main.py).
 """
-VERSION = "1.20"
-LOT = "23"
-LOT_LIBELLE = "Correctif messagerie WhatsApp : la zone d'écriture d'un message ne se vide plus et la jauge ne tourne plus sans fin ; menu « Centre De Messagerie WA »."
+VERSION = "1.21"
+LOT = "24"
+LOT_LIBELLE = "Ligne WhatsApp dédiée par centre : chaque centre peut avoir son propre émetteur Liluvine et sa clé ; retours routés vers le bon centre ; repli facultatif sur la ligne partagée."
