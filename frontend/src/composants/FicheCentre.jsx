@@ -18,7 +18,7 @@ function lireImage(fichier) {
   });
 }
 
-export default function FicheCentre({ form, maj }) {
+export default function FicheCentre({ form, maj, ligneWa = false, variableWa = "", clePresente = false }) {
   const { toast } = useApp();
   const fichier = useRef(null);
 
@@ -64,6 +64,16 @@ export default function FicheCentre({ form, maj }) {
       <Texte libelle="Téléphone" valeur={form.telephone} onChange={(v) => maj("telephone", v)} placeholder="25 30 00 00" />
       <Texte libelle="E-mail" valeur={form.email} onChange={(v) => maj("email", v)} placeholder="awa.badini@gmail.com" type="email" />
       <Texte libelle="IFU / RCCM" valeur={form.identifiant_fiscal} onChange={(v) => maj("identifiant_fiscal", v)} placeholder="00012345 X" />
+      {/* Ligne WhatsApp DÉDIÉE du centre (super administrateur) : émetteur créé dans SAWALI avec sa ligne privée ; la clé se saisit dans Render, jamais ici */}
+      {ligneWa && (
+        <div className="mb-3 rounded-xl bg-brume p-3">
+          <p className="mb-2 text-xs font-semibold tracking-wide text-ardoise">Ligne WhatsApp du centre</p>
+          <Texte libelle="Émetteur SAWALI de ce centre" valeur={form.wa_emetteur} onChange={(v) => maj("wa_emetteur", v.toLowerCase())} placeholder="dialyse-cmc" aide="Code de l'émetteur créé dans SAWALI et relié à la ligne privée du centre. Vide = ligne partagée « dialyse »." />
+          {form.wa_emetteur && <p className={`mb-2 text-xs font-semibold ${clePresente ? "text-emerald-700" : "text-orange-700"}`}>{clePresente ? "✓ Clé reçue par le serveur : la ligne du centre est active." : `Clé absente : saisissez la variable ${variableWa} dans Render (service dialyse-api). Tant qu'elle manque, le centre utilise la ligne partagée.`}</p>}
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-4 w-4 accent-emeraude" checked={!!form.wa_repli} onChange={(e) => maj("wa_repli", e.target.checked)} />
+            En cas de panne de la ligne du centre, essayer la ligne partagée (le patient verra alors un autre numéro).</label>
+        </div>
+      )}
       {/* Géolocalisation */}
       <div className="mb-3 rounded-xl bg-brume p-3">
         <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-ardoise"><MapPin size={14} /> Géolocalisation</p>
@@ -84,7 +94,7 @@ export default function FicheCentre({ form, maj }) {
 
 /** Corps envoyé au serveur : les coordonnées vides deviennent null (le serveur les efface). */
 export function corpsFiche(form) {
-  const c = { ...form };
+  const { _wa, ...c } = form;                 // `_wa` : information d'affichage seulement, jamais envoyée
   for (const k of ["latitude", "longitude"]) if (c[k] === "" || c[k] === undefined) c[k] = null;
   return c;
 }

@@ -33,7 +33,7 @@ export default function Centres() {
     try {
       const f = await api(`/centres/${c.id}`);
       setModal({ mode: "modifier", centre: c, form: { nom: f.nom, prefixe: f.prefixe, responsable: f.responsable, titre_responsable: f.titre_responsable, adresse: f.adresse, ville: f.ville,
-        telephone: f.telephone, email: f.email, identifiant_fiscal: f.identifiant_fiscal, latitude: f.latitude ?? "", longitude: f.longitude ?? "", logo: f.logo || "" } });
+        telephone: f.telephone, email: f.email, identifiant_fiscal: f.identifiant_fiscal, latitude: f.latitude ?? "", longitude: f.longitude ?? "", logo: f.logo || "", wa_emetteur: f.wa_emetteur || "", wa_repli: !!f.wa_repli, _wa: { variable: f.wa_variable, presente: f.wa_cle_presente } } });
     } catch (e) { toast(e.message, "erreur"); }
   }
   async function basculer(c) {
@@ -81,7 +81,7 @@ export default function Centres() {
           <Texte libelle="Nom du centre" valeur={modal.form.nom} onChange={(v) => maj("nom", v)} placeholder="Clinique Philadelphie" />
           <Texte libelle="Préfixe des codes patients" valeur={modal.form.prefixe} onChange={(v) => maj("prefixe", v.toUpperCase())} placeholder="CMC" maxLength={6}
             aide="2 à 6 lettres ou chiffres : les patients seront CMC-000001, CMC-000002… (ne change plus après le premier patient)" />
-          <FicheCentre form={modal.form} maj={maj} />
+          <FicheCentre form={modal.form} maj={maj} ligneWa variableWa={modal.form._wa?.variable || ""} clePresente={!!modal.form._wa?.presente} />
           {modal.mode === "modifier" && <p className="text-xs text-slate-500">« Modifié, non enregistré » : cliquez sur Enregistrer pour valider.</p>}
         </Modal>
       )}

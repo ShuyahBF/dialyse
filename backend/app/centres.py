@@ -34,6 +34,12 @@ def _public(c: dict, avec_logo: bool = False) -> dict:
          "latitude": c.get("latitude"), "longitude": c.get("longitude"), "a_logo": bool(c.get("logo"))}
     for cle, _lib, _max in CHAMPS_TEXTE:
         d[cle] = c.get(cle, "")
+    # Ligne WhatsApp dédiée du centre : émetteur SAWALI propre, variable de clé à saisir dans Render (jamais la clé elle-même), repli facultatif sur la ligne partagée
+    from . import whatsapp
+    d["wa_emetteur"] = c.get("wa_emetteur", "")
+    d["wa_repli"] = bool(c.get("wa_repli"))
+    d["wa_variable"] = whatsapp.variable_cle_centre(c.get("prefixe", ""))
+    d["wa_cle_presente"] = bool(c.get("wa_emetteur")) and bool(whatsapp.ligne_du_centre(c.get("id")))
     if avec_logo:
         d["logo"] = ("data:image/png;base64," + c["logo"]) if c.get("logo") else ""
     return d
@@ -45,6 +51,13 @@ def _champs_presentation(corps: dict) -> dict:
     for cle, libelle, long_ in CHAMPS_TEXTE:
         if cle in corps:
             maj[cle] = validation.texte(corps, cle, libelle, False, long_)
+    if "wa_emetteur" in corps:
+        code = str(corps.get("wa_emetteur") or "").strip().lower()
+        if code and not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,38}[a-z0-9]", code):
+            validation.erreur("Émetteur WhatsApp : 3 à 40 caractères (lettres minuscules, chiffres, tiret), comme créé dans SAWALI")
+        maj["wa_emetteur"] = code
+    if "wa_repli" in corps:
+        maj["wa_repli"] = bool(corps["wa_repli"])
     if "latitude" in corps or "longitude" in corps:
         brut = (corps.get("latitude"), corps.get("longitude"))
         if all(v in (None, "") for v in brut):
@@ -193,6 +206,9 @@ def modifier_mon_centre(corps: dict, u: dict = Depends(exiger_roles(roles.ADMINI
     if not u["centre_id"]:
         raise HTTPException(400, "Choisissez d'abord un centre de dialyse")
     maj = _champs_presentation(corps)
+    if u["role"] != roles.SUPER_ADMIN:                           # la ligne WhatsApp dédiée se règle au niveau du groupe (super administrateur), pas par l'administrateur du centre
+        maj.pop("wa_emetteur", None)
+        maj.pop("wa_repli", None)
     if "logo" in corps:
         maj["logo"] = _logo_depuis_corps(corps)
     if maj:
