@@ -68,8 +68,18 @@ function Conversation({ contact, modeles, onChange }) {
   const [document, setDocument] = useState(null);     // { type: "papier", format } | { type: "facture", id } | { type: "fichier", ... }
   const [factures, setFactures] = useState([]);
   const bas = useRef(null);
-  const charger = useCallback(() => api(`/messagerie/contacts/${contact.id}/messages`).then((x) => { setD(x); onChange?.(); }), [contact.id, onChange]);
-  useEffect(() => { setD(null); setDocument(null); setTexte(""); charger().catch((e) => toast(e.message, "erreur")); const t = setInterval(() => charger().catch(() => {}), 20000); return () => clearInterval(t); }, [charger, toast]);
+  // `onChange` change à CHAQUE rendu du parent : on le garde dans une référence. Sinon `charger` changeait à chaque rendu, l'effet de chargement se relançait en boucle,
+  // remettait le message à zéro (impossible de saisir) et réaffichait la jauge sans fin (défaut relevé sur la vidéo du 20/11/2026).
+  const surChangement = useRef(onChange);
+  surChangement.current = onChange;
+  const charger = useCallback(() => api(`/messagerie/contacts/${contact.id}/messages`).then((x) => { setD(x); surChangement.current?.(); }), [contact.id]);
+  // Changement de contact : on repart d'une zone d'écriture vide (et SEULEMENT dans ce cas : jamais pendant la saisie).
+  useEffect(() => { setD(null); setDocument(null); setTexte(""); }, [contact.id]);
+  useEffect(() => {
+    charger().catch((e) => toast(e.message, "erreur"));
+    const t = setInterval(() => charger().catch(() => {}), 20000);
+    return () => clearInterval(t);
+  }, [charger, toast]);
   useEffect(() => { bas.current?.scrollIntoView({ block: "end" }); }, [d]);
   useEffect(() => { if (contact.patient_id) api(`/factures?patient_id=${contact.patient_id}`).then((l) => setFactures(l.filter((f) => f.statut !== "annulee").slice(0, 20))).catch(() => setFactures([])); else setFactures([]); }, [contact.patient_id]);
 

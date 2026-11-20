@@ -19,7 +19,7 @@ const MENU = [
   { chemin: "/aujourdhui", libelle: "aujourd'hui", icone: Activity, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/calendrier", libelle: "calendrier d'activité", icone: CalendarRange, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/reservations", libelle: "réservations", icone: ClipboardCheck, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
-  { chemin: "/messagerie", libelle: "centre de messagerie wa", icone: MessageCircle, roles: ["super_admin", "admin", "secretariat"] },
+  { chemin: "/messagerie", libelle: "centre de messagerie WA", icone: MessageCircle, roles: ["super_admin", "admin", "secretariat"] },
   { chemin: "/planning", libelle: "planning des séances", icone: CalendarDays, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/patients", libelle: "patients", icone: Users, roles: ["super_admin", "admin", "medecin", "infirmier", "secretariat"] },
   { chemin: "/modeles", libelle: "modèles de dossier d'adhésion", icone: ClipboardCheck, roles: ["super_admin", "admin"] },
