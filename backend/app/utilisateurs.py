@@ -16,7 +16,8 @@ def _public(u: dict) -> dict:
     return {"id": u["id"], "login": u["login"], "nom_affiche": u.get("nom_affiche", ""), "role": u["role"],
             "role_libelle": roles.LIBELLES.get(u["role"], u["role"]), "actif": u.get("actif", True),
             "totp_actif": bool(u.get("totp_actif")), "doit_changer_mdp": bool(u.get("doit_changer_mdp")),
-            "created_at": u.get("created_at", ""), "centre_id": u.get("centre_id"), "centre_nom": u.get("_centre_nom", "")}
+            "created_at": u.get("created_at", ""), "centre_id": u.get("centre_id"), "centre_nom": u.get("_centre_nom", ""),
+            "centres_ids": u.get("centres_ids") or []}
 
 
 @routeur.post("/auth/login")
@@ -47,6 +48,33 @@ def changer_mot_de_passe(corps: dict, u: dict = Depends(utilisateur_courant)):
 def _roles_autorises(u: dict) -> set:
     """Rôles que ce compte a le droit de créer ou de modifier."""
     return set(roles.TOUS_LES_ROLES) if u["role"] == roles.SUPER_ADMIN else roles.ROLES_GERES_PAR_ADMIN
+
+
+def _centres_supplementaires(corps: dict, u: dict, role: str, centre_principal: str | None) -> list | None:
+    """
+    Centres SUPPLÉMENTAIRES d'un administrateur multi-centres (`centres_ids`). Réservé au SUPER ADMINISTRATEUR ; seul le rôle « administrateur » rattaché à un centre peut en avoir.
+    Chaque centre doit exister ; le centre principal n'y figure pas ; doublons retirés ; 20 au plus. Retourne None si le corps n'en parle pas.
+    """
+    if "centres_ids" not in corps:
+        return None
+    if u["role"] != roles.SUPER_ADMIN:
+        raise HTTPException(403, "Seul le super administrateur donne accès à plusieurs centres")
+    voulus = corps.get("centres_ids") or []
+    if not isinstance(voulus, list):
+        validation.erreur("Centres : une liste attendue")
+    liste = []
+    for c in voulus:
+        c = str(c or "").strip()
+        if c and c != (centre_principal or "") and c not in liste:
+            liste.append(c)
+    if liste and (role != roles.ADMIN or not centre_principal):
+        validation.erreur("Seul un administrateur rattaché à un centre peut avoir accès à plusieurs centres")
+    if len(liste) > 20:
+        validation.erreur("20 centres supplémentaires au plus")
+    existants = {c["id"] for c in db.brut().centres.find({"id": {"$in": liste}}, {"_id": 0, "id": 1})}
+    if set(liste) - existants:
+        validation.erreur("Un des centres choisis n'existe pas")
+    return liste
 
 
 def _noms_centres() -> dict:
@@ -113,6 +141,9 @@ def creer(corps: dict, u: dict = Depends(exiger_roles(roles.ADMINISTRATION))):
     doc = {"id": str(uuid.uuid4()), "login": login_, "nom_affiche": validation.texte(corps, "nom_affiche", "Nom affiché", True, 80),
            "role": role, "actif": True, "echecs": 0, "mot_de_passe_hash": securite.hacher_mot_de_passe(mdp),
            "doit_changer_mdp": True, "created_at": db.maintenant(), "cree_par": u["login"], "centre_id": centre_id}
+    extra = _centres_supplementaires(corps, u, role, centre_id)
+    if extra:
+        doc["centres_ids"] = extra
     db.base().utilisateurs.insert_one(doc)
     journaliser("compte_cree", u, f"{login_} ({role})")
     return _public(doc)
@@ -146,6 +177,12 @@ def modifier(id_: str, corps: dict, u: dict = Depends(exiger_roles(roles.ADMINIS
         if c["id"] == u["id"] and not corps["actif"]:
             raise HTTPException(400, "Vous ne pouvez pas désactiver votre propre compte")
         maj["actif"] = bool(corps["actif"])
+    role_final = maj.get("role", c["role"])
+    extra = _centres_supplementaires(corps, u, role_final, c.get("centre_id"))
+    if extra is not None:
+        maj["centres_ids"] = extra
+    elif role_final != roles.ADMIN and c.get("centres_ids"):
+        maj["centres_ids"] = []                                    # un compte qui cesse d'être administrateur perd ses centres supplémentaires
     if maj:
         db.base().utilisateurs.update_one({"id": id_}, {"$set": maj})
         journaliser("compte_modifie", u, f"{c['login']} : {', '.join(sorted(maj))}")

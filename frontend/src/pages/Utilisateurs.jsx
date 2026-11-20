@@ -26,8 +26,10 @@ export default function Utilisateurs() {
   const maj = (k, v) => setModal((m) => ({ ...m, form: { ...m.form, [k]: v } }));
   async function enregistrer() {
     const { mode, compte, form } = modal;
-    if (mode === "creer") await avecToast("Création du compte", () => api("/utilisateurs", { methode: "POST", corps: form }), (c) => `Compte « ${c.login} » créé`);
-    else if (mode === "modifier") await avecToast("Enregistrement", () => api(`/utilisateurs/${compte.id}`, { methode: "PUT", corps: { nom_affiche: form.nom_affiche, role: form.role } }), () => "Compte modifié");
+    // Centres supplémentaires d'un administrateur multi-centres : seul le super administrateur en parle (le serveur refuse les autres) ; liste vide si le compte n'est pas administrateur.
+    const extra = utilisateur.role === "super_admin" ? { centres_ids: form.role === "admin" ? (form.centres_ids || []) : [] } : {};
+    if (mode === "creer") await avecToast("Création du compte", () => api("/utilisateurs", { methode: "POST", corps: { ...form, ...extra } }), (c) => `Compte « ${c.login} » créé`);
+    else if (mode === "modifier") await avecToast("Enregistrement", () => api(`/utilisateurs/${compte.id}`, { methode: "PUT", corps: { nom_affiche: form.nom_affiche, role: form.role, ...extra } }), () => "Compte modifié");
     else await avecToast("Réinitialisation", () => api(`/utilisateurs/${compte.id}/reinitialiser`, { methode: "POST", corps: { mot_de_passe: form.mot_de_passe } }), () => "Mot de passe provisoire défini");
     setModal(null); await charger();
   }
@@ -59,11 +61,11 @@ export default function Utilisateurs() {
           <tbody>
             {affichees.map((c) => (
               <tr key={c.id} onClick={() => setSelection(c.id)} className={selection === c.id ? "ligne-selectionnee" : ""}>
-                <td className="font-medium text-emeraude">{c.login}</td><td>{c.nom_affiche}</td><td>{c.role_libelle}</td>{voitCentre && <td>{c.centre_nom || "—"}</td>}
+                <td className="font-medium text-emeraude">{c.login}</td><td>{c.nom_affiche}</td><td>{c.role_libelle}{(c.centres_ids || []).length > 0 && <span className="ml-1.5 rounded-full bg-citron/15 px-2 py-0.5 text-xs font-semibold text-orange-700" title="Administrateur multi-centres">+{c.centres_ids.length} centre{c.centres_ids.length > 1 ? "s" : ""}</span>}</td>{voitCentre && <td>{c.centre_nom || "—"}</td>}
                 <td>{c.actif ? <Pastille couleur="vert" icone={UserCheck}>Actif</Pastille> : <Pastille couleur="rouge" icone={UserX}>Désactivé</Pastille>}</td>
                 <td>{c.totp_actif ? <Pastille couleur="vert">Oui</Pastille> : <Pastille>Non</Pastille>}</td>
                 <td className="whitespace-nowrap">
-                  <BoutonIcone icone={Pencil} libelle="Modifier le compte" onClick={() => setModal({ mode: "modifier", compte: c, form: { nom_affiche: c.nom_affiche, role: c.role } })} />
+                  <BoutonIcone icone={Pencil} libelle="Modifier le compte" onClick={() => setModal({ mode: "modifier", compte: c, form: { nom_affiche: c.nom_affiche, role: c.role, centres_ids: c.centres_ids || [] } })} />
                   <BoutonIcone icone={KeyRound} libelle="Réinitialiser le mot de passe" couleur="text-orange-600" onClick={() => setModal({ mode: "mdp", compte: c, form: {} })} />
                   {c.id !== utilisateur.id && <BoutonIcone icone={c.actif ? UserX : UserCheck} libelle={c.actif ? "Désactiver le compte" : "Activer le compte"} couleur={c.actif ? "text-rose-600" : "text-emerald-600"} onClick={() => basculer(c)} />}
                 </td>
@@ -83,6 +85,25 @@ export default function Utilisateurs() {
               aide="Un compte « Groupe » (super administrateur, directeur général) choisit lui-même son centre de travail." />
           )}
           {modal.mode !== "mdp" && modal.compte?.id !== utilisateur.id && <Liste libelle="Rôle" valeur={modal.form.role} onChange={(v) => maj("role", v)} options={roles} />}
+          {/* Administrateur multi-centres (super administrateur seul) : cocher les centres EN PLUS de son centre principal */}
+          {utilisateur.role === "super_admin" && modal.mode !== "mdp" && modal.form.role === "admin" && (() => {
+            const principal = modal.mode === "modifier" ? modal.compte.centre_id : (modal.form.centre_id ?? utilisateur.centre_id ?? "");
+            if (!principal) return null;
+            const choix = modal.form.centres_ids || [];
+            return (
+              <Champ libelle="Centres supplémentaires" aide="Cet administrateur travaillera aussi dans les centres cochés (il choisit son centre en haut de l'écran). Il ne voit aucun autre centre.">
+                <div className="space-y-1.5 rounded-xl bg-brume p-3">
+                  {centres.filter((c) => c.actif && c.id !== principal).map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" className="h-4 w-4 accent-emeraude" checked={choix.includes(c.id)}
+                        onChange={(e) => maj("centres_ids", e.target.checked ? [...choix, c.id] : choix.filter((x) => x !== c.id))} />{c.nom}
+                    </label>
+                  ))}
+                  {centres.filter((c) => c.actif && c.id !== principal).length === 0 && <p className="text-xs text-ardoise">Aucun autre centre actif.</p>}
+                </div>
+              </Champ>
+            );
+          })()}
           {modal.mode !== "modifier" && (
             <Champ libelle="Mot de passe provisoire" aide="À changer par la personne à sa première connexion">
               <ChampMotDePasse valeur={modal.form.mot_de_passe || ""} onChange={(v) => maj("mot_de_passe", v)} autoComplete="new-password" />

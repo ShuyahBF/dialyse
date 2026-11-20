@@ -140,6 +140,8 @@ def lister(u: dict = Depends(utilisateur_courant)):
     """Centres visibles : tous pour un compte du groupe (liste du sélecteur), le sien seulement pour les autres."""
     if u["role"] in roles.ROLES_GROUPE and u["groupe"]:
         lignes = db.brut().centres.find({}, {"_id": 0}).sort("nom", 1)
+    elif u.get("multi_centres"):                         # administrateur multi-centres : SES centres seulement
+        lignes = db.brut().centres.find({"id": {"$in": u["centres_ids"]}}, {"_id": 0}).sort("nom", 1)
     else:
         lignes = db.brut().centres.find({"id": u["centre_id"]}, {"_id": 0})
     return [_public(c) for c in lignes]
