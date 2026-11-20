@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hmac
 import json
+import logging
 import re
 import threading
 import time
@@ -26,6 +27,13 @@ from . import acces, db, facturation, roles, validation, whatsapp
 from .auth import exiger_roles, journaliser
 
 routeur = APIRouter()
+# Journal VISIBLE dans Render : le logger « uvicorn.error » est celui dont le niveau INFO est affiché (un logger ordinaire est muet à ce niveau)
+journal_serveur = logging.getLogger("uvicorn.error")
+
+
+def _court(valeur, taille: int) -> str:
+    """Texte court et sûr pour le journal : caractères de contrôle retirés, longueur bornée (jamais le contenu d'un message)."""
+    return "".join(c for c in str(valeur or "") if c.isprintable())[:taille]
 
 MESSAGERIE = {roles.SECRETARIAT, roles.ADMIN, roles.SUPER_ADMIN}          # qui tient la messagerie du centre
 CATEGORIES = ["patient", "proche", "medecin", "fournisseur", "autre"]
@@ -622,7 +630,14 @@ async def retour_sawali(request: Request):
     from fastapi.concurrency import run_in_threadpool
     brut = await request.body()
     corps, centre = _corps_signe(brut, request.headers.get("x-timestamp") or "", request.headers.get("x-signature") or "")
-    genre = str(corps.get("type") or "")
+    genre = _court(corps.get("type"), 40)
+    # JOURNAL DE DIAGNOSTIC (comme ShuyahStore, lot 40) : le TYPE du retour et, pour un statut de remise, l'état, l'identifiant du message, la cause éventuelle et la ligne
+    # (partagée ou centre). Visible dans Render (logger « uvicorn.error »). JAMAIS le texte d'un message ni un numéro : sert à comprendre pourquoi un message n'arrive pas.
+    if genre == "statut":
+        journal_serveur.info("Retour SAWALI : statut=%s message=%s cause=%s ligne=%s", _court(corps.get("statut"), 20), _court(corps.get("id") or corps.get("message_id"), 40),
+                             _court(corps.get("erreur") or corps.get("error") or corps.get("raison") or corps.get("motif"), 80) or "-", "centre" if centre else "partagee")
+    else:
+        journal_serveur.info("Retour SAWALI : type=%s ligne=%s", genre or "-", "centre" if centre else "partagee")
 
     def travail():
         if genre == "stats_du_jour":

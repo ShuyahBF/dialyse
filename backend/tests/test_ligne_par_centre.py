@@ -132,3 +132,20 @@ def test_inconnu_sur_la_ligne_d_un_centre_va_a_ce_centre(client, wa_entetes, mon
     _retour_avec(client, {"type": "reponse", "de": "+22679999999", "texte": "Bonjour"}, CLE_B)
     assert client.get("/messagerie/contacts", headers=hb).json()[0]["nom"] == "Nouveau contact"                                          # rangé chez B, pas « non classé »
     assert client.get("/messagerie/contacts", headers=entete(client, "adm")).json() == []
+
+
+def test_journal_de_diagnostic_des_retours_sans_texte_ni_numero(client, caplog, monkeypatch):
+    """Le journal du serveur note le type, l'état de remise, l'identifiant et la cause : jamais le texte d'un message ni un numéro."""
+    import json
+    import logging
+    import time
+    from app import whatsapp
+    cle = "cle-partagee-test"
+    monkeypatch.setenv("LILUVINE_WA_HMAC", cle)                 # propre à ce test (rien ne fuit vers les autres)
+    corps = json.dumps({"type": "statut", "statut": "failed", "id": "wamid.T1", "erreur": "ligne déconnectée", "to": "+22670123456", "message": "texte secret 987654"})
+    h = str(int(time.time()))
+    with caplog.at_level(logging.INFO, logger="uvicorn.error"):
+        r = client.post("/api/webhooks/liluvine-retour", content=corps.encode(), headers={"X-Timestamp": h, "X-Signature": whatsapp.signer(cle, h, corps), "Content-Type": "application/json"})
+    assert r.status_code == 200
+    assert "statut=failed" in caplog.text and "wamid.T1" in caplog.text and "ligne déconnectée" in caplog.text and "ligne=partagee" in caplog.text
+    assert "22670123456" not in caplog.text and "987654" not in caplog.text and "texte secret" not in caplog.text
