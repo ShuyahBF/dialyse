@@ -1,5 +1,5 @@
 // Rentabilité du centre : recettes, coûts (personnel, maintenance, charges saisies), marge, coût et recette par séance, seuil de rentabilité ; totaux sous le tableau (règle 25).
-import { Plus, RefreshCw, Save, Trash2, TrendingUp } from "lucide-react";
+import { AlertTriangle, Plus, RefreshCw, Save, Trash2, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton, { BoutonIcone } from "../composants/Bouton.jsx";
@@ -13,7 +13,7 @@ import { trierLignes, useTri } from "../lib/tri.js";
 
 const NOMS_MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 const libMois = (m) => `${NOMS_MOIS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}`;
-const COLONNES = [["seances", "Séances", "n"], ["facture", "Facturé", "f"], ["encaisse", "Encaissé", "f"], ["personnel", "Personnel", "f"], ["maintenance", "Maintenance", "f"], ["charges", "Charges", "f"],
+const COLONNES = [["seances", "Séances", "n"], ["facture", "Facturé", "f"], ["encaisse", "Encaissé", "f"], ["personnel", "Personnel", "f"], ["maintenance", "Maintenance", "f"], ["charges", "Charges", "f"], ["consommables_stock", "Conso. stock", "f"],
                   ["couts", "Coûts", "f"], ["marge", "Marge", "f"], ["taux_marge_pct", "Marge %", "p"], ["cout_par_seance", "Coût / séance", "f"], ["recette_par_seance", "Recette / séance", "f"], ["seuil_seances", "Seuil (séances)", "n"]];
 const fmt = (v, t) => (v === null || v === undefined ? "—" : t === "f" ? fcfa(v) : t === "p" ? nb(v) + " %" : nb(v, 0));
 
@@ -60,7 +60,13 @@ export default function Rentabilite() {
           <tfoot><tr className="font-semibold"><td>Total · {lignes.length} mois</td>{COLONNES.map(([k, , ty]) => <td key={k} className="num tabular-nums">{fmt(t[k], ty)}</td>)}</tr></tfoot>
         </table>
       </div>
-      <p className="mt-2 text-xs text-slate-500">Coûts = personnel (coût mensuel des salariés actifs) + maintenance (interventions terminées) + charges saisies. Variables = consommables et médicaments ; fixes = le reste. Seuil = coûts fixes / (recette moyenne − coût variable moyen par séance). Les pourcentages ne sont jamais additionnés.</p>
+      {t.conso_sans_prix > 0 && (
+        <p className="mt-2 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" data-testid="alerte-sans-prix">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+          <span><b>{nb(t.conso_sans_prix, 2)} unité(s)</b> sorties du stock sur la période viennent de lots sans prix : elles ne sont pas comptées dans « Conso. stock ». Renseignez le prix unitaire à la réception des lots (écran Consommables et stocks).</span>
+        </p>
+      )}
+      <p className="mt-2 text-xs text-slate-500">« Conso. stock » = sorties et pertes de stock du mois × prix unitaire du lot : ne saisissez plus à la main, pour ces mois, la charge « Consommables et médicaments » correspondante (elle serait comptée deux fois). Coûts = personnel (coût mensuel des salariés actifs) + maintenance (interventions terminées) + charges saisies. Variables = consommables et médicaments ; fixes = le reste. Seuil = coûts fixes / (recette moyenne − coût variable moyen par séance). Les pourcentages ne sont jamais additionnés.</p>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-semibold">Charges saisies</h2>
         {peutSaisir && <Bouton icone={Plus} onClick={() => { setForm({ mois: a, categorie: "" }); setModal(true); }}>Ajouter une charge</Bouton>}</div>

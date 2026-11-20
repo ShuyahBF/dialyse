@@ -4,7 +4,7 @@ RENTABILITÉ du centre : recettes (factures), coûts (personnel, maintenance, ch
 Montants en FCFA ENTIERS. Calcul par mois entier (`de` et `a` au format AAAA-MM) :
   recettes   = total des factures non annulées du mois (facturé) et encaissé (paiements enregistrés) ;
   coûts      = personnel (coût mensuel des salariés actifs) + maintenance (coût des interventions TERMINÉES du mois) + charges saisies du mois ;
-  variables  = charges « consommables et médicaments » (varient avec le nombre de séances) ; fixes = tout le reste ;
+  variables  = charges « consommables et médicaments » saisies + CONSOMMABLES DU STOCK VALORISÉS (sorties et pertes du mois x prix unitaire du lot, lot 27) ; fixes = tout le reste ;
   marge      = facturé − coûts ; coût par séance = coûts / séances réalisées ; seuil de rentabilité (séances) = coûts fixes / (recette moyenne − coût variable moyen par séance).
 Réservé à l'administration et à la direction (données financières, agrégées : aucune identité de patient).
 """
@@ -107,19 +107,25 @@ def calculer(de: str, a: str) -> dict:
     maint: dict = {}
     for i in db.base().interventions.find({"statut": "terminee", "date_realisee": {"$gte": debut, "$lte": fin}}, {"_id": 0, "date_realisee": 1, "cout": 1}):
         maint[i["date_realisee"][:7]] = maint.get(i["date_realisee"][:7], 0) + int(i.get("cout", 0))
+    # Consommables du STOCK valorisés (lot 27) : sorties et pertes du mois x prix unitaire de leur lot ; `conso_sans_prix` = quantité sortie sans prix connu (à compléter)
+    conso: dict = {}
+    sans_prix: dict = {}
+    for mv in db.base().mouvements.find({"type": {"$in": ["sortie", "perte"]}, "date": {"$gte": debut, "$lte": fin}}, {"_id": 0, "date": 1, "valeur": 1, "sans_prix": 1}):
+        conso[mv["date"][:7]] = conso.get(mv["date"][:7], 0) + int(mv.get("valeur") or 0)
+        sans_prix[mv["date"][:7]] = sans_prix.get(mv["date"][:7], 0) + (mv.get("sans_prix") or 0)
     saisies: dict = {}
     for c in db.base().charges.find({"mois": {"$gte": mois[0], "$lte": mois[-1]}}, {"_id": 0}):
         saisies.setdefault(c["mois"], {})[c["categorie"]] = saisies.get(c["mois"], {}).get(c["categorie"], 0) + int(c["montant"])
     lignes = []
     for m in mois:
         s = saisies.get(m, {})
-        variables = sum(v for k, v in s.items() if CATEGORIES.get(k))
+        variables = sum(v for k, v in s.items() if CATEGORIES.get(k)) + conso.get(m, 0)
         autres = sum(v for k, v in s.items() if not CATEGORIES.get(k))
         fixes = salaires + maint.get(m, 0) + autres
-        l = {"mois": m, "seances": seances.get(m, 0), "facture": facture.get(m, 0), "encaisse": encaisse.get(m, 0), "personnel": salaires, "maintenance": maint.get(m, 0), "charges": variables + autres,
+        l = {"mois": m, "seances": seances.get(m, 0), "facture": facture.get(m, 0), "encaisse": encaisse.get(m, 0), "personnel": salaires, "maintenance": maint.get(m, 0), "charges": variables + autres, "consommables_stock": conso.get(m, 0), "conso_sans_prix": round(sans_prix.get(m, 0), 4),
              "couts_variables": variables, "couts_fixes": fixes, "couts": variables + fixes}
         lignes.append(l | indicateurs(l))
-    total = {k: sum(l[k] for l in lignes) for k in ("seances", "facture", "encaisse", "personnel", "maintenance", "charges", "couts_variables", "couts_fixes", "couts")}
+    total = {k: sum(l[k] for l in lignes) for k in ("seances", "facture", "encaisse", "personnel", "maintenance", "charges", "consommables_stock", "conso_sans_prix", "couts_variables", "couts_fixes", "couts")}
     return {"de": mois[0], "a": mois[-1], "mois": lignes, "total": total | indicateurs(total)}
 
 
