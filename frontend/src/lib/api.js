@@ -54,10 +54,13 @@ export async function chargerPdf(chemin) {
   return URL.createObjectURL(await r.blob());
 }
 
-/** Envoie un fichier brut (octets) à l'API et renvoie la réponse JSON (import d'une sauvegarde). */
-export async function envoyerBinaire(chemin, octets) {
+/** Adresse complète d'une route de l'API (pour une image ou une vidéo affichée directement par le navigateur). */
+export const urlApi = (chemin) => BASE + chemin;
+
+/** Envoie un fichier brut (octets) à l'API et renvoie la réponse JSON (import d'une sauvegarde, fond de la page d'accueil). */
+export async function envoyerBinaire(chemin, octets, methode = "POST") {
   let r;
-  try { r = await fetch(BASE + chemin, { method: "POST", headers: { ...entetesAuth(), "Content-Type": "application/octet-stream" }, body: octets }); } catch { throw new Error("Serveur injoignable : vérifiez la connexion Internet"); }
+  try { r = await fetch(BASE + chemin, { method: methode, headers: { ...entetesAuth(), "Content-Type": "application/octet-stream" }, body: octets }); } catch { throw new Error("Serveur injoignable : vérifiez la connexion Internet"); }
   let d = null;
   try { d = await r.json(); } catch { /* corps vide */ }
   if (!r.ok) throw new Error(typeof d?.detail === "string" ? d.detail : "Erreur " + r.status);
