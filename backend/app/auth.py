@@ -36,6 +36,16 @@ def _lire_utilisateur(authorization: str, x_centre: str) -> dict:
     groupe = u["role"] in roles.ROLES_GROUPE and not centre_id
     if groupe and x_centre.strip():
         centre_id = x_centre.strip()
+    # ADMINISTRATEUR MULTI-CENTRES (lot 26) : un administrateur rattaché à un centre peut avoir d'autres centres autorisés par le super administrateur (`centres_ids`).
+    # Il choisit parmi SES centres seulement (X-Centre) ; un centre hors de sa liste est refusé (403) ; sans choix il travaille dans son centre principal.
+    principal = centre_id
+    autorises = [principal] + [c for c in (u.get("centres_ids") or []) if c and c != principal] if (principal and u["role"] == roles.ADMIN) else []
+    multi = len(autorises) > 1
+    if multi and x_centre.strip():
+        voulu = x_centre.strip()
+        if voulu not in autorises:
+            raise HTTPException(403, "Ce centre ne fait pas partie de vos centres")
+        centre_id = voulu
     centre = db.brut().centres.find_one({"id": centre_id}) if centre_id else None
     if centre_id and not centre:
         raise HTTPException(400 if groupe else 403, "Centre inconnu")
@@ -45,7 +55,8 @@ def _lire_utilisateur(authorization: str, x_centre: str) -> dict:
     return {"id": u["id"], "login": u["login"], "nom": u.get("nom_affiche", u["login"]), "role": u["role"],
             "doit_changer_mdp": bool(u.get("doit_changer_mdp")), "totp_actif": bool(u.get("totp_actif")),
             "centre_id": centre["id"] if centre else None, "centre_nom": centre["nom"] if centre else "",
-            "centre_prefixe": centre["prefixe"] if centre else "", "groupe": groupe}
+            "centre_prefixe": centre["prefixe"] if centre else "", "groupe": groupe,
+            "multi_centres": multi, "centres_ids": autorises if multi else [], "centre_principal": principal}
 
 
 async def utilisateur_courant(authorization: str = Header(default=""), x_centre: str = Header(default="")) -> dict:

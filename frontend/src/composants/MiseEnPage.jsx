@@ -48,7 +48,9 @@ export default function MiseEnPage() {
   // Compte du groupe (super administrateur, direction) sans centre choisi : seules les pages « Centres », « Comptes » et « Mon compte » fonctionnent.
   const sansCentre = utilisateur.groupe && !centreChoisi;
   const pageLibre = ["/groupe", "/centres", "/fiche-centre", "/utilisateurs", "/sauvegardes", "/compte"].some((p) => pathname.startsWith(p));
-  const nomCentre = utilisateur.groupe ? (centres.find((c) => c.id === centreChoisi)?.nom || "") : utilisateur.centre_nom;
+  // Sélecteur de centre : comptes du groupe (tous les centres) et administrateurs multi-centres (leurs centres seulement).
+  const selecteur = utilisateur.groupe || utilisateur.multi_centres;
+  const nomCentre = selecteur ? (centres.find((c) => c.id === (centreChoisi || utilisateur.centre_principal))?.nom || "") : utilisateur.centre_nom;
   // Logo du centre de travail (barre du haut)
   const [logoCentre, setLogoCentre] = useState("");
   useEffect(() => {
@@ -61,10 +63,10 @@ export default function MiseEnPage() {
       <header className="sticky top-0 z-50 flex h-12 items-center gap-3 bg-white px-4 shadow-sm ring-1 ring-encre/10" data-testid="barre-centre">
         {logoCentre ? <img src={logoCentre} alt="" className="h-8 w-auto max-w-[96px] object-contain" /> : <Building2 size={20} className="text-citron" aria-hidden="true" />}
         <span className="hidden text-[11px] font-semibold uppercase tracking-wider text-ardoise sm:inline">Centre</span>
-        {utilisateur.groupe ? (
-          <select value={centreChoisi} onChange={(e) => choisirCentre(e.target.value)} aria-label="Centre de travail" data-testid="selecteur-centre"
+        {selecteur ? (
+          <select value={centreChoisi || utilisateur.centre_principal || ""} onChange={(e) => choisirCentre(e.target.value)} aria-label="Centre de travail" data-testid="selecteur-centre"
             className="min-w-0 max-w-[60vw] rounded-lg border border-encre/15 bg-brume px-3 py-1.5 text-sm font-semibold text-encre focus:outline-none focus:ring-2 focus:ring-citron">
-            <option value="">— Choisir un centre —</option>
+            {utilisateur.groupe && <option value="">— Choisir un centre —</option>}
             {centres.filter((c) => c.actif).map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
           </select>
         ) : <span className="truncate text-sm font-semibold text-encre" data-testid="nom-centre">{nomCentre}</span>}

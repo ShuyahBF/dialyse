@@ -53,6 +53,8 @@ export function Fournisseur({ children }) {
     api("/centres").then((l) => {
       setCentres(l);
       if (utilisateur.groupe && !l.some((c) => c.id === centreStock.lire())) choisirCentre(l.length === 1 ? l[0].id : "");
+      // Administrateur multi-centres : sans choix valide parmi SES centres, il travaille dans son centre principal.
+      else if (utilisateur.multi_centres && !l.some((c) => c.id === centreStock.lire())) choisirCentre(utilisateur.centre_principal);
     }).catch(() => {});
   }, [utilisateur, choisirCentre]);
 
