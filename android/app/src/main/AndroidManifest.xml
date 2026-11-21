@@ -11,6 +11,9 @@
     <!-- Verrou de l'application par empreinte (ou code du téléphone) -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <!-- Android 11+ : voir l'application ShuyahStore installée (bouton « Mettre à jour ») -->
+    <queries><package android:name="com.shuyah.store" /></queries>
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"

@@ -14,8 +14,8 @@ android {
         minSdk = 24                      // Android 7.0
         targetSdk = 35
         // versionCode : entier qui augmente à chaque version ; versionName : numéro affiché (et envoyé à SAWALI dans le signal de présence)
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
         // Adresses du site et de l'API de Dialyse. Surcharge à la compilation : -PsiteUrl=https://… -PapiUrl=https://…/api
         buildConfigField("String", "SITE_URL", "\"${project.findProperty("siteUrl") ?: "https://looisdialyse.cloud/"}\"")
         buildConfigField("String", "API_URL", "\"${project.findProperty("apiUrl") ?: "https://api.looisdialyse.cloud"}\"")
@@ -76,4 +76,5 @@ dependencies {
     // Empreinte digitale (verrou de l'application)
     implementation("androidx.biometric:biometric:1.1.0")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")   // org.json réel pour les tests JVM
 }
