@@ -1,5 +1,7 @@
 package com.shuyah.dialyse
 
+import android.content.Intent
+import android.net.Uri
 import android.webkit.JavascriptInterface
 import org.json.JSONObject
 
@@ -16,6 +18,18 @@ class Pont(private val activite: WebActivity) {
         .put("verrou_disponible", Verrou.disponible(activite)).toString()
 
     /** Recharge le site (bouton « Réessayer » de la page « Pas de connexion »). */
+    /**
+     * Connexion par Google : Google interdit sa page de connexion dans une fenêtre intégrée ; on l'ouvre donc dans le NAVIGATEUR du téléphone.
+     * Seules sont acceptées les adresses https de Google ou de la connexion Google de Dialyse (« …/auth/google/… ») : le site ne peut pas ouvrir n'importe quoi.
+     */
+    @JavascriptInterface
+    fun ouvrirNavigateur(adresse: String) {
+        val u = try { Uri.parse(adresse) } catch (_: Exception) { return }
+        val permis = u.scheme == "https" && (u.host == "accounts.google.com" || (u.path ?: "").startsWith("/auth/google/"))
+        if (!permis) return
+        activite.runOnUiThread { try { activite.startActivity(Intent(Intent.ACTION_VIEW, u)) } catch (_: Exception) {} }
+    }
+
     @JavascriptInterface
     fun reessayer() { activite.runOnUiThread { activite.recharger() } }
 

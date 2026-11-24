@@ -25,12 +25,19 @@
         <activity
             android:name=".WebActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Retour de la connexion par Google : le navigateur ouvre « dialyse://google?code=… » et ramène ici -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="dialyse" android:host="google" />
             </intent-filter>
         </activity>
         <!-- Vérification périodique des alertes (JobScheduler) -->

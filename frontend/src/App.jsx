@@ -17,6 +17,7 @@ import Messagerie from "./pages/Messagerie.jsx";
 import Reservations from "./pages/Reservations.jsx";
 import Compte from "./pages/Compte.jsx";
 import Connexion from "./pages/Connexion.jsx";
+import ConnexionGoogle from "./pages/ConnexionGoogle.jsx";
 import Facturation from "./pages/Facturation.jsx";
 import Journal from "./pages/Journal.jsx";
 import Patients from "./pages/Patients.jsx";
@@ -40,9 +41,10 @@ export default function App() {
   return (
     <>
       {!utilisateur ? (
-        <Routes><Route path="reinitialiser" element={<Reinitialiser />} /><Route path="*" element={<Connexion />} /></Routes>
+        <Routes><Route path="reinitialiser" element={<Reinitialiser />} /><Route path="connexion-google" element={<ConnexionGoogle />} /><Route path="*" element={<Connexion />} /></Routes>
       ) : (
         <Routes>
+          <Route path="connexion-google" element={<ConnexionGoogle />} />
           <Route element={<MiseEnPage />}>
             <Route index element={role === "secretariat" || role === "technicien" ? <Navigate to={accueil} replace /> : <Tableau />} />
             <Route path="planning" element={<Planning />} />
