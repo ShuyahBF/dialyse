@@ -11,6 +11,8 @@ Sur Render : onglet « Environment » du service.
   TACHES_DE_FOND           « 0 » pour désactiver les tâches planifiées (tests)
   WEBAUTHN_RP_ID           nom de domaine du site pour les clés d'accès (défaut : domaine de FRONTEND_ORIGIN) ; le changer oblige à recréer les clés
   LILUVINE_WA_URL / LILUVINE_WA_HMAC / LILUVINE_WA_EMETTEUR  WhatsApp par « Liluvine Standard » de SAWALI (la clé HMAC est un secret saisi dans Render)
+  GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET  connexion par compte Google (ID client OAuth « Application Web » ; le SECRET est saisi par le propriétaire dans Render ; vide = fonction inactive)
+  GOOGLE_REDIRECT_URI      facultatif : adresse de retour déclarée chez Google (sinon déduite), ex. https://api.looisdialyse.cloud/auth/google/retour
   FRONTEND_ORIGIN          adresse du site web (pour CORS), https://looisdialyse.cloud
   PRESENCE_SAWALI          « 0 » pour désactiver le signal de présence (tests)
 """

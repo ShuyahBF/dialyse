@@ -143,6 +143,8 @@ def creer_index(b) -> None:
     """Index sur tout filtre fréquent (règle 7) : jamais de parcours complet d'une collection."""
     b.utilisateurs.create_index("login", unique=True)
     b.utilisateurs.create_index("id", unique=True)
+    # Connexion par Google : une identité Google ne peut être liée qu'à UN compte
+    b.utilisateurs.create_index("google.sub", unique=True, partialFilterExpression={"google.sub": {"$type": "string"}})
     b.journal.create_index([("quand", -1)])
     b.patients.create_index("id", unique=True)
     # Anciens index UNIQUES d'avant le multi-centres (code patient, nom d'article, numéro de facture, id de modèle) : ils empêcheraient deux centres

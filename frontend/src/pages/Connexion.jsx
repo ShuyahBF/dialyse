@@ -10,6 +10,7 @@ import Logo from "../composants/Logo.jsx";
 import { Champ, Texte } from "../composants/Champs.jsx";
 import { api, jeton } from "../lib/api.js";
 import { useApp } from "../lib/contexte.jsx";
+import { googleDisponible, ouvrirGoogle, urlConnexionGoogle } from "../lib/google.js";
 import { clesAccesDisponibles, messageCleAcces, signerAvecCleAcces } from "../lib/passkeys.js";
 
 export default function Connexion() {
@@ -25,6 +26,8 @@ export default function Connexion() {
   const [attente, setAttente] = useState(false);
   const [etat, setEtat] = useState("verification");        // verification | actif | lent | injoignable
   const [options, setOptions] = useState({ whatsapp: false });
+  const [google, setGoogle] = useState(false);            // le serveur est-il configuré pour Google ?
+  useEffect(() => { googleDisponible().then(setGoogle); }, []);
   const [fond] = useFondAccueil();                         // image ou vidéo de fond choisie par le super administrateur (facultative)
 
   // État du serveur : « Serveur actif », lent (> 3 s) ou injoignable ; moyens d'accès proposés.
@@ -104,6 +107,7 @@ export default function Connexion() {
 
         <div className="mt-4 space-y-2">
           {clesAccesDisponibles() && mode === "mdp" && <Bouton icone={Fingerprint} className="w-full" disabled={attente} onClick={cleAcces}>Empreinte, visage ou code de l'appareil</Bouton>}
+          {google && mode === "mdp" && <Bouton icone={LogIn} className="w-full" disabled={attente} onClick={() => { if (!ouvrirGoogle(urlConnexionGoogle())) toast("Mettez à jour l'application Dialyse pour utiliser Google.", "erreur"); }}>Se connecter avec Google</Bouton>}
           {options.whatsapp && mode !== "wa" && <Bouton icone={MessageCircle} className="w-full" onClick={() => { setMode("wa"); setCodeEnvoye(false); setCode(""); }}>Se connecter par code WhatsApp</Bouton>}
           {options.whatsapp && mode === "mdp" && <button type="button" onClick={() => setMode("oubli")} className="block mx-auto text-sm text-turquoise-700 underline">Mot de passe oublié ?</button>}
           {mode !== "mdp" && <Bouton icone={LogIn} className="w-full" onClick={() => { setMode("mdp"); setCode(""); }}>Retour à la connexion par mot de passe</Bouton>}

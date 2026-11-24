@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import BandeauVersion from "../composants/BandeauVersion.jsx";
 import Bouton from "../composants/Bouton.jsx";
 import ChampMotDePasse from "../composants/ChampMotDePasse.jsx";
+import GoogleCompte from "../composants/GoogleCompte.jsx";
 import ForceMotDePasse from "../composants/ForceMotDePasse.jsx";
 import { Champ, Texte } from "../composants/Champs.jsx";
 import { api } from "../lib/api.js";
@@ -70,6 +71,7 @@ export default function Compte() {
       <h1 className="text-2xl font-semibold mb-1">Mon Compte</h1>
       <p className="text-sm text-slate-600 mb-4">{utilisateur.nom} · {utilisateur.role_libelle}</p>
       {utilisateur.doit_changer_mdp && <p className="mb-4 rounded-lg bg-orange-100 text-orange-900 px-3 py-2 text-sm">Votre mot de passe est provisoire : veuillez le changer maintenant.</p>}
+      <GoogleCompte />
       <section className="rounded-2xl bg-white p-4 ring-1 ring-encre/10 mb-4">
         <h2 className="font-semibold mb-3 flex items-center gap-2"><KeyRound size={18} className="text-turquoise-600" /> Changer Mon Mot De Passe</h2>
         <Champ libelle="Mot de passe actuel"><ChampMotDePasse valeur={ancien} onChange={setAncien} /></Champ>
